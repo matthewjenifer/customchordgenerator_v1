@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maschine Chord Set Generator V1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .chord-input-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+        .json-output {
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+        .copy-notification {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .copy-notification.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-purple-400 mb-2">Maschine User Chord Set Generator V1</h1>
+            <p class="text-gray-400">Create your custom chord set JSON files with ease!</p>
+        </header>
+
+        <div class="max-w-4xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl">
+            <h2 class="text-xl font-semibold text-purple-400 mb-4">Installation Path</h2>
+            <img src="https://i.ibb.co/5Wsg8H9d/00-READ-ME-installation-path.png" alt="Maschine Chord Set Installation Path" class="w-full rounded-lg border border-gray-600">
+            <p class="text-gray-400 mt-2 text-sm">Place the generated JSON file in this location to use it with Maschine. Maschine will need to resart to load your new chord set.</p>
+        </div>
+        
+        <div class="max-w-4xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl">
+            <h2 class="text-xl font-semibold text-purple-400 mb-4">Supported Chord Types</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <h3 class="font-medium text-purple-300 mb-1">Basic Chords</h3>
+                    <ul class="text-sm text-gray-300">
+                        <li>Major (C, Cmaj)</li>
+                        <li>Minor (Cm, Cmin)</li>
+                        <li>Diminished (Cdim)</li>
+                        <li>Augmented (Caug)</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <h3 class="font-medium text-purple-300 mb-1">7th Chords</h3>
+                    <ul class="text-sm text-gray-300">
+                        <li>Major 7th (Cmaj7)</li>
+                        <li>Dominant 7th (C7)</li>
+                        <li>Minor 7th (Cm7)</li>
+                        <li>Half-diminished (Cm7b5)</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <h3 class="font-medium text-purple-300 mb-1">Extended Chords</h3>
+                    <ul class="text-sm text-gray-300">
+                        <li>6th (C6)</li>
+                        <li>9th (C9)</li>
+                        <li>11th (C11)</li>
+                        <li>13th (C13)</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <h3 class="font-medium text-purple-300 mb-1">Suspended Chords</h3>
+                    <ul class="text-sm text-gray-300">
+                        <li>Sus2 (Csus2)</li>
+                        <li>Sus4 (Csus4)</li>
+                        <li>Add9 (Cadd9)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            
+
+        <div class="max-w-4xl mx-auto bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label for="setName" class="block text-sm font-medium text-gray-300 mb-2">Chord Set Name</label>
+                    <input type="text" id="setName" placeholder="e.g. 'A Chords' or 'My Custom Set'" 
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-white">
+                </div>
+                <div>
+                    <label for="fileNumber" class="block text-sm font-medium text-gray-300 mb-2">File Number (1-16)</label>
+                    <input type="number" id="fileNumber" min="1" max="16" value="1"
+                        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-white">
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Chord Names (12 total)</label>
+                <div class="chord-input-container mb-4">
+                    <!-- Chord inputs will be added here -->
+                </div>
+                <button id="addChordBtn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition">
+                    <i class="fas fa-plus mr-2"></i>Add Chord Field
+                </button>
+            </div>
+
+            <div class="flex justify-center">
+                <button id="generateBtn" class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition transform hover:scale-105">
+                    <i class="fas fa-code mr-2"></i>Generate JSON
+                </button>
+            </div>
+        </div>
+
+        <div id="outputSection" class="max-w-4xl mx-auto bg-gray-800 rounded-xl shadow-lg p-6 hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-purple-400">Generated JSON</h2>
+                <div class="flex space-x-2">
+                    <button id="copyBtn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition">
+                        <i class="fas fa-copy mr-2"></i>Copy
+                    </button>
+                    <button id="downloadBtn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition">
+                        <i class="fas fa-download mr-2"></i>Download
+                    </button>
+                </div>
+            </div>
+            <div class="relative">
+                <pre id="jsonOutput" class="json-output p-4 bg-gray-900 rounded-lg overflow-auto max-h-96"></pre>
+                <div id="copyNotification" class="copy-notification absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-md">
+                    Copied!
+                </div>
+            </div>
+
+            <div class="max-w-4xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl flex justify-center items-center" style="width: 100px; height: 100px; object-fit: contain;">
+                <img 
+                src="https://i.ibb.co/9k5VXCKv/Native-Instruments-Maschine-25th-Anniversary-20221210101718-removebg-preview.png" 
+                alt="Native-Instruments-Maschine-25th-Anniversary-20221210101718-removebg-preview"
+                style="width: 100px; height: 100px; object-fit: contain;"
+                >
+            </div>
+            <p style="text-align: center;">made by <a href="https://www.fiverr.com/buddha_meansbiz/be-your-ghost-producer" target="_blank"><h2 class="text-xl font-semibold text-purple-400 mb-4" style="text-align: center;">me.<h2></a>
+            </p>
+        </div>
+
+        </div>
+
+        
+    </div>
+
+    
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize chord inputs
+            const chordContainer = document.querySelector('.chord-input-container');
+            const addChordBtn = document.getElementById('addChordBtn');
+            const generateBtn = document.getElementById('generateBtn');
+            const outputSection = document.getElementById('outputSection');
+            const jsonOutput = document.getElementById('jsonOutput');
+            const copyBtn = document.getElementById('copyBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const copyNotification = document.getElementById('copyNotification');
+            
+            // Add initial chord inputs
+            for (let i = 0; i < 12; i++) {
+                addChordInput();
+            }
+            
+            // Event listeners
+            addChordBtn.addEventListener('click', addChordInput);
+            generateBtn.addEventListener('click', generateJSON);
+            copyBtn.addEventListener('click', copyToClipboard);
+            downloadBtn.addEventListener('click', downloadJSON);
+            
+            // Function to add a new chord input field
+            function addChordInput() {
+                const inputCount = chordContainer.querySelectorAll('input').length;
+                if (inputCount >= 12) {
+                    alert('Maximum of 12 chords allowed');
+                    return;
+                }
+                
+                const inputDiv = document.createElement('div');
+                inputDiv.className = 'flex items-center';
+                inputDiv.innerHTML = `
+                    <input type="text" placeholder="Chord ${inputCount + 1}" 
+                        class="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-white">
+                    <button class="ml-2 text-gray-400 hover:text-red-400 remove-chord-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                chordContainer.appendChild(inputDiv);
+                
+                // Add event listener to remove button
+                const removeBtn = inputDiv.querySelector('.remove-chord-btn');
+                removeBtn.addEventListener('click', function() {
+                    chordContainer.removeChild(inputDiv);
+                });
+            }
+            
+            // MIDI note to Maschine value mapping (value = MIDI_note - 60, where C3 = 60 in Maschine)
+            const midiToValue = (midiNote) => midiNote - 60;
+
+            // Chord type to note intervals mapping
+            const chordMap = {
+                // Major chords
+                '': [0, 4, 7], // Default major chord
+                'maj': [0, 4, 7],
+                // Minor chords
+                'm': [0, 3, 7],
+                'min': [0, 3, 7],
+                // Diminished chords
+                'dim': [0, 3, 6],
+                // Augmented chords
+                'aug': [0, 4, 8],
+                // 7th chords
+                '7': [0, 4, 7, 10],
+                'maj7': [0, 4, 7, 11],
+                'min7': [0, 3, 7, 10],
+                'm7': [0, 3, 7, 10],
+                'dim7': [0, 3, 6, 9],
+                'm7b5': [0, 3, 6, 10], // half-diminished
+                // 6th chords
+                '6': [0, 4, 7, 9],
+                'm6': [0, 3, 7, 9],
+                // 9th chords
+                '9': [0, 4, 7, 10, 14],
+                'maj9': [0, 4, 7, 11, 14],
+                'min9': [0, 3, 7, 10, 14],
+                // 11th chords
+                '11': [0, 4, 7, 10, 14, 17],
+                'maj11': [0, 4, 7, 11, 14, 17],
+                'min11': [0, 3, 7, 10, 14, 17],
+                // 13th chords
+                '13': [0, 4, 7, 10, 14, 17, 21],
+                'maj13': [0, 4, 7, 11, 14, 17, 21],
+                'min13': [0, 3, 7, 10, 14, 17, 21],
+                // Suspended chords
+                'sus2': [0, 2, 7],
+                'sus4': [0, 5, 7],
+                'sus': [0, 5, 7],
+                // Add chords
+                'add9': [0, 4, 7, 14],
+                'add11': [0, 4, 7, 17],
+                'add13': [0, 4, 7, 21]
+            };
+
+            // Chord type aliases mapping
+            const chordAliases = {
+                'ma': 'maj',
+                'major': 'maj',
+                'mi': 'm',
+                'minor': 'm',
+                'ma7': 'maj7',
+                'major7': 'maj7',
+                'mi7': 'm7',
+                'min7': 'm7',
+                'minor7': 'm7',
+                'ma9': 'maj9',
+                'major9': 'maj9',
+                'mi9': 'min9',
+                'minor9': 'min9',
+                'diminished': 'dim',
+                'augmented': 'aug'
+            };
+
+            // Root note to MIDI note value mapping (C3 = 48, A3 = 57, etc.)
+            const rootNoteMap = {
+                'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
+                'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8,
+                'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11
+            };
+
+            // Function to parse chord name and return note values
+            function parseChord(chordName) {
+                // Extract root note and chord type
+                const rootMatch = chordName.match(/^([A-Ga-g][#b]?)/i);
+                if (!rootMatch) return null;
+                
+                let root = rootMatch[1];
+                // Capitalize first letter and handle lowercase 'b'/'#'
+                root = root.charAt(0).toUpperCase() + (root.length > 1 ? root.slice(1).toLowerCase() : '');
+                
+                let type = chordName.slice(rootMatch[0].length).toLowerCase();
+                
+                // Normalize chord type using aliases
+                type = chordAliases[type] || type;
+                
+                // Get intervals for chord type
+                const intervals = chordMap[type] || chordMap[''];
+                
+                // Get base MIDI note from root (C3 = 60)
+                const rootMidi = rootNoteMap[root] + 48; // Base octave is now C3 (MIDI 48-59)
+                if (rootMidi === undefined) return null;
+                
+                // Always start with root dropped an octave
+                const noteValues = [midiToValue(rootMidi - 12)];
+                
+                // Add other intervals in order (skip root since we already added it)
+                for (let i = 1; i < intervals.length; i++) {
+                    noteValues.push(midiToValue(rootMidi + intervals[i]));
+                }
+                
+                return noteValues;
+            }
+            
+            // Function to generate JSON output
+            function generateJSON() {
+                const setName = document.getElementById('setName').value.trim();
+                if (!setName) {
+                    alert('Please enter a chord set name');
+                    return;
+                }
+                
+                const chordInputs = chordContainer.querySelectorAll('input');
+                const chords = [];
+                
+                // Get all chord names from inputs
+                const chordNames = Array.from(chordInputs).map(input => input.value.trim()).filter(name => name);
+                
+                if (chordNames.length === 0) {
+                    alert('Please enter at least one chord');
+                    return;
+                }
+                
+                // Process each chord
+                for (const chordName of chordNames) {
+                    const noteValues = parseChord(chordName);
+                    if (!noteValues) {
+                        alert(`Invalid chord format: ${chordName}`);
+                        return;
+                    }
+                    
+                    chords.push({
+                        name: chordName,
+                        notes: noteValues
+                    });
+                }
+                
+                // Generate UUID (simplified version)
+                function generateUUID() {
+                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                        const r = Math.random() * 16 | 0;
+                        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    });
+                }
+                
+                // Create the JSON object
+                const jsonData = {
+                    chords: chords,
+                    name: setName,
+                    typeId: "native-instruments-chord-set",
+                    uuid: generateUUID(),
+                    version: "1.0.0"
+                };
+                
+                // Display the JSON
+                jsonOutput.textContent = JSON.stringify(jsonData, null, 2);
+                outputSection.classList.remove('hidden');
+            }
+            
+            // Function to copy JSON to clipboard
+            function copyToClipboard() {
+                navigator.clipboard.writeText(jsonOutput.textContent)
+                    .then(() => {
+                        copyNotification.classList.add('show');
+                        setTimeout(() => {
+                            copyNotification.classList.remove('show');
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy: ', err);
+                    });
+            }
+            
+            // Function to download JSON as file
+            function downloadJSON() {
+                const setName = document.getElementById('setName').value.trim() || 'chord_set';
+                const fileNumber = document.getElementById('fileNumber').value;
+                const paddedNumber = fileNumber.toString().padStart(2, '0');
+                const blob = new Blob([jsonOutput.textContent], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `user_chord_set_${paddedNumber}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        });
+    </script>
+    <!-- <script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
+    <script>
+    kofiWidgetOverlay.draw('matthewj_dev', {
+        'type': 'floating-chat',
+        'floating-chat.donateButton.text': 'Tip Jar',
+        'floating-chat.donateButton.background-color': '#323842',
+        'floating-chat.donateButton.text-color': '#fff'
+    });
+    </script>  -->
+</body>
+</html>
