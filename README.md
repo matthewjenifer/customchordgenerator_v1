@@ -35,7 +35,7 @@ For example, Ama7 will output:
 
 ## Installation / Usage
 
-No installation needed! Just [click here](customchordgenerator-v1.vercel.app) OR..
+No installation needed! Just visit customchordgenerator-v1.vercel.app OR..
 
 1. Download or clone this repo:
 
