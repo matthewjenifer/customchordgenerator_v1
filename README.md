@@ -1,5 +1,7 @@
 # Maschine Chord Set Generator
 
+![Alt text](https://blog.native-instruments.com/wp-content/uploads/2025/03/Introducing-Custom-Chords-in-Maschine-featured.jpg)
+
 Create and export custom Native Instruments Maschine user chord sets in JSON format—no music theory or scripting required.
 
 ## What is this?
