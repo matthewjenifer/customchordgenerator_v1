@@ -1,4 +1,4 @@
-# Maschine Chord Set Generator
+# Maschine User Chord Set Generator
 
 ![Alt text](https://blog.native-instruments.com/wp-content/uploads/2025/03/Introducing-Custom-Chords-in-Maschine-featured.jpg)
 
