@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maschine Chord Set Generator V1</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .chord-input-container {
@@ -152,6 +154,20 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+
+            // Create the synth (PolySynth for chords, Monosynth for single notes)
+        const synth = new Tone.PolySynth(Tone.FMSynth).toDestination();
+
+        // Make sure the audio context is started on first user gesture
+        let toneStarted = false;
+        function startToneIfNeeded() {
+         if (!toneStarted) {
+        Tone.start();
+        toneStarted = true;
+        }
+}
+
+
             // Initialize chord inputs
             const chordContainer = document.querySelector('.chord-input-container');
             const addChordBtn = document.getElementById('addChordBtn');
@@ -186,17 +202,41 @@
                 inputDiv.innerHTML = `
                     <input type="text" placeholder="Chord ${inputCount + 1}" 
                         class="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-white">
+                    <button class="ml-2 text-gray-400 hover:text-green-400 play-chord-btn" title="Play Chord">
+                        <i class="fas fa-play"></i>
+                    </button>
                     <button class="ml-2 text-gray-400 hover:text-red-400 remove-chord-btn">
                         <i class="fas fa-times"></i>
                     </button>
                 `;
                 chordContainer.appendChild(inputDiv);
                 
-                // Add event listener to remove button
+                // Add event listeners
                 const removeBtn = inputDiv.querySelector('.remove-chord-btn');
                 removeBtn.addEventListener('click', function() {
                     chordContainer.removeChild(inputDiv);
                 });
+                
+                const playBtn = inputDiv.querySelector('.play-chord-btn');
+            playBtn.addEventListener('click', function() {
+                startToneIfNeeded();
+            
+                const chordName = inputDiv.querySelector('input').value.trim();
+                if (!chordName) return;
+                
+                const noteValues = parseChord(chordName);
+                if (!noteValues) return;
+                
+                // Convert note values to actual notes (C3 = 48)
+                const notes = noteValues.map(val => {
+                    const midiNote = val + 60; // Convert back to MIDI
+                    return Tone.Frequency(midiNote, "midi").toNote();
+                });
+                
+                // Play the chord
+                synth.triggerAttackRelease(notes, "2n");
+            });
+
             }
             
             // MIDI note to Maschine value mapping (value = MIDI_note - 60, where C3 = 60 in Maschine)
