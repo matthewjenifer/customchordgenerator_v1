@@ -37,10 +37,32 @@
         </header>
 
         <div class="max-w-4xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl">
-            <h2 class="text-xl font-semibold text-purple-400 mb-4">Installation Path</h2>
-            <img src="https://i.ibb.co/5Wsg8H9d/00-READ-ME-installation-path.png" alt="Maschine Chord Set Installation Path" class="w-full rounded-lg border border-gray-600">
-            <p class="text-gray-400 mt-2 text-sm">Place the generated JSON file in this location to use it with Maschine. Maschine will need to resart to load your new chord set.</p>
-        </div>
+    <h2 class="text-xl font-semibold text-purple-400 mb-4">Installation Path</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full border border-gray-600 rounded-lg text-gray-200 bg-gray-900">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 border-b border-gray-600">Platform</th>
+                    <th class="px-4 py-2 border-b border-gray-600">Folder Path for User Chords</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="px-4 py-2 border-b border-gray-600">Windows</td>
+                    <td class="px-4 py-2 border-b border-gray-600"><code>%USERPROFILE%\AppData\Local\Native Instruments\Shared\User Chords\</code></td>
+                </tr>
+                <tr>
+                    <td class="px-4 py-2 border-b border-gray-600">Mac</td>
+                    <td class="px-4 py-2 border-b border-gray-600"><code>~/Library/Application Support/Native Instruments/Shared/User Chords/</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="text-gray-400 mt-2 text-sm">
+        Place the generated JSON file in this location to use it with Maschine. Maschine will need to restart to load your new chord set.
+    </p>
+</div>
+
         
         <div class="max-w-4xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl">
             <h2 class="text-xl font-semibold text-purple-400 mb-4">Supported Chord Types</h2>
