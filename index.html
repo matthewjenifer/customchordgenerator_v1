@@ -60,46 +60,69 @@
         </header>
 
 
-        
+
         <div class="max-w-4xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl">
-            <h2 class="text-xl font-semibold text-purple-400 mb-4">Supported Chord Types</h2>
+            <h2 class="text-xl font-semibold text-purple-400 mb-4">Supported Chord Types & Notations</h2>
+            
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-gray-700 p-3 rounded-lg">
-                    <h3 class="font-medium text-purple-300 mb-1">Basic Chords</h3>
-                    <ul class="text-sm text-gray-300">
-                        <li>Major (C, Cmaj)</li>
-                        <li>Minor (Cm, Cmin)</li>
-                        <li>Diminished (Cdim)</li>
-                        <li>Augmented (Caug)</li>
-                    </ul>
-                </div>
-                <div class="bg-gray-700 p-3 rounded-lg">
-                    <h3 class="font-medium text-purple-300 mb-1">7th Chords</h3>
-                    <ul class="text-sm text-gray-300">
-                        <li>Major 7th (Cmaj7)</li>
-                        <li>Dominant 7th (C7)</li>
-                        <li>Minor 7th (Cm7)</li>
-                        <li>Half-diminished (Cm7b5)</li>
-                    </ul>
-                </div>
-                <div class="bg-gray-700 p-3 rounded-lg">
-                    <h3 class="font-medium text-purple-300 mb-1">Extended Chords</h3>
-                    <ul class="text-sm text-gray-300">
-                        <li>6th (C6)</li>
-                        <li>9th (C9)</li>
-                        <li>11th (C11)</li>
-                        <li>13th (C13)</li>
-                    </ul>
-                </div>
-                <div class="bg-gray-700 p-3 rounded-lg">
-                    <h3 class="font-medium text-purple-300 mb-1">Suspended Chords</h3>
-                    <ul class="text-sm text-gray-300">
-                        <li>Sus2 (Csus2)</li>
-                        <li>Sus4 (Csus4)</li>
-                        <li>Add9 (Cadd9)</li>
-                    </ul>
-                </div>
-            </div>
+    <div class="bg-gray-700 p-3 rounded-lg">
+        <h3 class="font-medium text-purple-300 mb-1">Basic Chords</h3>
+        <ul class="text-sm text-gray-300">
+            <li>Major (C, Cmaj)</li>
+            <li>Minor (Cm, Cmin)</li>
+            <li>Diminished (Cdim)</li>
+            <li>Augmented (Caug)</li>
+        </ul>
+    </div>
+    <div class="bg-gray-700 p-3 rounded-lg">
+        <h3 class="font-medium text-purple-300 mb-1">7th Chords</h3>
+        <ul class="text-sm text-gray-300">
+            <li>Major 7th (Cmaj7)</li>
+            <li>Dominant 7th (C7)</li>
+            <li>Minor 7th (Cm7)</li>
+            <li>Half-diminished (Cm7b5)</li>
+        </ul>
+    </div>
+    <div class="bg-gray-700 p-3 rounded-lg">
+        <h3 class="font-medium text-purple-300 mb-1">Extended Chords</h3>
+        <ul class="text-sm text-gray-300">
+            <li>6th (C6)</li>
+            <li>9th (C9)</li>
+            <li>11th (C11)</li>
+            <li>13th (C13)</li>
+        </ul>
+    </div>
+    <div class="bg-gray-700 p-3 rounded-lg">
+        <h3 class="font-medium text-purple-300 mb-1">Suspended Chords</h3>
+        <ul class="text-sm text-gray-300">
+            <li>Sus2 (Csus2)</li>
+            <li>Sus4 (Csus4)</li>
+            <li>Add9 (Cadd9)</li>
+        </ul>
+    </div>
+    <div class="bg-gray-700 p-3 rounded-lg">
+        <h3 class="font-medium text-purple-300 mb-1">Slash Chords</h3>
+        <ul class="text-sm text-gray-300">
+            <li>C/E (C major with E in the bass)</li>
+            <li>Am/G (A minor with G in the bass)</li>
+            <li>G/B, D/F#, etc.</li>
+            <br>
+            <li class="italic text-gray-400">Use “/” to specify alternate bass notes</li>
+        </ul>
+    </div>
+    <div class="bg-gray-700 p-3 rounded-lg">
+        <h3 class="font-medium text-purple-300 mb-1">Altered & Hybrid Chords</h3>
+        <ul class="text-sm text-gray-300">
+            <li>m7b5 (Half-diminished)</li>
+            <li>7#5, 7b9, 13b9, etc.</li>
+            <li>add9, add11, sus2, sus4</li>
+            <li>Maj6/9, m6/9</li>
+            <br>
+            <li class="italic text-gray-400">Advanced or jazz/pop voicings</li>
+        </ul>
+    </div>
+</div>
+
 
 
 
@@ -117,6 +140,46 @@
                             class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-white">
                     </div>
                 </div>
+
+                <div class="flex items-center mb-4 gap-4">
+                    <div>
+                        <label for="keySelector" class="block text-sm font-medium text-gray-300 mb-2">Key (Optional)
+                        </label>
+                        <select id="keySelector"
+                            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <option value="C">C</option>
+                            <option value="C#">C#</option>
+                            <option value="Db">Db</option>
+                            <option value="D">D</option>
+                            <option value="D#">D#</option>
+                            <option value="Eb">Eb</option>
+                            <option value="E">E</option>
+                            <option value="F">F</option>
+                            <option value="F#">F#</option>
+                            <option value="Gb">Gb</option>
+                            <option value="G">G</option>
+                            <option value="G#">G#</option>
+                            <option value="Ab">Ab</option>
+                            <option value="A">A</option>
+                            <option value="A#">A#</option>
+                            <option value="Bb">Bb</option>
+                            <option value="B">B</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col justify-end mt-7">
+    <div class="flex items-center">
+        <input type="checkbox" id="romanNumeralMode" class="mr-2">
+        <label for="romanNumeralMode" class="text-gray-300">Roman Numeral Chord Naming*</label>
+    </div>
+    <span class="text-xs text-gray-500 italic ml-6 mt-1">
+        *When selected accidentals (out-of-key) chords show as “?”
+    </span>
+</div>
+
+                </div>
+
+
+
 
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-300 mb-2">Chord Names (12 total)</label>
@@ -525,6 +588,88 @@
                 return chordMap[''];
             }
 
+            const majorNumerals = ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
+            const minorNumerals = ["i", "ii°", "III", "iv", "v", "VI",
+            "VII"]; // If you want minor key support later
+
+            function getRomanNumeralName(chordRoot, chordType, key) {
+                // Get root number for both chord and key
+                const rootMap = {
+                    'C': 0,
+                    'C#': 1,
+                    'Db': 1,
+                    'D': 2,
+                    'D#': 3,
+                    'Eb': 3,
+                    'E': 4,
+                    'F': 5,
+                    'F#': 6,
+                    'Gb': 6,
+                    'G': 7,
+                    'G#': 8,
+                    'Ab': 8,
+                    'A': 9,
+                    'A#': 10,
+                    'Bb': 10,
+                    'B': 11
+                };
+
+                // Get semitone distance from key root to chord root, always positive (mod 12)
+                let keyNum = rootMap[key];
+                let chordNum = rootMap[chordRoot];
+                if (keyNum === undefined || chordNum === undefined) return chordRoot;
+
+                let interval = (chordNum - keyNum + 12) % 12;
+
+                // Roman numerals for C major: [C,D,E,F,G,A,B] → [I,ii,iii,IV,V,vi,vii°]
+                let numeral;
+                switch (interval) {
+                    case 0:
+                        numeral = "I";
+                        break;
+                    case 2:
+                        numeral = "ii";
+                        break;
+                    case 4:
+                        numeral = "iii";
+                        break;
+                    case 5:
+                        numeral = "IV";
+                        break;
+                    case 7:
+                        numeral = "V";
+                        break;
+                    case 9:
+                        numeral = "vi";
+                        break;
+                    case 11:
+                        numeral = "vii°";
+                        break;
+                        // For accidentals (e.g., C# in C): use # or b + numeral, e.g. "#IV"
+                    default:
+                        // Could try to label as '#IV', 'bIII', etc., but for now:
+                        numeral = "?";
+                }
+
+                // Basic type logic
+                if (/m(?!a)/i.test(chordType)) { // matches "m" but not "maj"
+                    if (numeral === "I") numeral = "i";
+                    else if (numeral === "IV") numeral = "iv";
+                    else if (numeral === "V") numeral = "v";
+                    else if (numeral === "vi") numeral =
+                    "VI"; // minor vi is VI in minor key, but let’s keep it simple
+                }
+                if (/dim|°/i.test(chordType)) numeral += "°";
+                if (/aug|\+/i.test(chordType)) numeral += "+";
+
+                // Add extensions (e.g., "7", "9", "13") to the numeral if present in chordType
+                let extension = chordType.match(/7|9|11|13/);
+                if (extension) numeral += extension[0];
+
+                return numeral;
+            }
+
+
 
             // Function to parse chord name and return note values
             function parseChord(chordName) {
@@ -616,7 +761,9 @@
                     return;
                 }
 
-                // Process each chord
+                const romanNumeralMode = document.getElementById('romanNumeralMode').checked;
+                const key = document.getElementById('keySelector').value;
+
                 for (const chordName of chordNames) {
                     const noteValues = parseChord(chordName);
                     if (!noteValues) {
@@ -624,11 +771,28 @@
                         return;
                     }
 
+                    // Extract root and type again (a little duplication from parseChord, for clarity)
+                    let mainChord = chordName;
+                    if (chordName.includes("/")) {
+                        [mainChord] = chordName.split("/");
+                        mainChord = mainChord.trim();
+                    }
+                    const rootMatch = mainChord.match(/^([A-Ga-g][#b]?)/i);
+                    let root = rootMatch ? rootMatch[1] : chordName;
+                    root = root.charAt(0).toUpperCase() + (root.length > 1 ? root.slice(1).toLowerCase() : '');
+                    let type = mainChord.slice(rootMatch ? rootMatch[0].length : 0).toLowerCase();
+
+                    let numeralName = chordName;
+                    if (romanNumeralMode) {
+                        numeralName = getRomanNumeralName(root, type, key);
+                    }
+
                     chords.push({
-                        name: chordName,
+                        name: numeralName,
                         notes: noteValues
                     });
                 }
+
 
                 // Generate UUID (simplified version)
                 function generateUUID() {
