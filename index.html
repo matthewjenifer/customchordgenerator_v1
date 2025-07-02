@@ -658,22 +658,53 @@
             }
 
             // Function to download JSON as file
-            function downloadJSON() {
+            async function downloadJSON() {
                 const setName = document.getElementById('setName').value.trim() || 'chord_set';
                 const fileNumber = document.getElementById('fileNumber').value;
                 const paddedNumber = fileNumber.toString().padStart(2, '0');
-                const blob = new Blob([jsonOutput.textContent], {
-                    type: 'application/json'
-                });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `user_chord_set_${paddedNumber}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                const fileName = `user_chord_set_${paddedNumber}.json`;
+                const jsonStr = jsonOutput.textContent;
+
+                // Try File System Access API (Chrome/Edge/Brave)
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: fileName,
+                            types: [{
+                                description: 'JSON Files',
+                                accept: {
+                                    'application/json': ['.json']
+                                },
+                            }, ],
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(jsonStr);
+                        await writable.close();
+
+                        // Store the last folder handle (requires user consent)
+                        window.lastChordSetFolderHandle = handle;
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            alert('Failed to save file: ' + err.message);
+                        }
+                    }
+                } else {
+                    // Fallback: Classic download (user sets download folder in browser settings)
+                    const blob = new Blob([jsonStr], {
+                        type: 'application/json'
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    alert("Your browser doesn't support folder selection. Default download was used.");
+                }
             }
+
         });
     </script>
     <script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
