@@ -8,23 +8,26 @@ A single-page web app that lets you build up to 12 custom chord sets for use wit
 
 ## Features
 
-* Build up to 12 custom chord sets per session
-* Name each chord set
-* Add up to 12 chords per set (supports standard chord names: major, minor, 7th, 9th, sus2, etc.)
-* Automatic root voicing and note value calculation (matches Native Instruments convention)
-* Optional key selection for each set
-* Roman numeral chord naming (for theory-minded users)
-* Export one or more chord sets as a single Maschine-compatible JSON file
-* Copy or download your generated file instantly
+- Build up to 12 custom chord sets per session
+- Name each chord set
+- Add up to 12 chords per set (supports standard chord names: major, minor, 7th, 9th, sus2, etc.)
+- Automatic root voicing and note value calculation (matches Native Instruments convention)
+- Optional key selection for each set
+- Roman numeral chord naming (for theory-minded users)
+- Preview each chord before adding it to your set
+- Export one or more chord sets as a single Maschine-compatible JSON file
+- Copy or download your generated file instantly
 
 ## How it works
 
-* Enter a chord set name (e.g., "A Chords")
-* Add chords by typing their names (e.g., Ama7, Ami, G7, F#min9)
-* (Optional) Choose a key for the set
-* (Optional) Enable Roman Numeral Chord Naming (chords will display as I, ii, V7, etc.)
-* The app calculates the correct note values, with the root always voiced one octave down (as Maschine expects)
-* Click **Generate JSON** to view your file, then copy or download it
+- Enter a chord set name (e.g., "A Chords")
+- Add chords by typing their names (e.g., Ama7, Ami, G7, F#min9)
+- Instantly preview any chord with the built-in sound engine before finalizing your set
+- (Optional) Choose a key for the set
+- (Optional) Enable Roman Numeral Chord Naming (chords will display as I, ii, V7, etc.)
+- The app calculates the correct note values, with the root always voiced one octave down (as Maschine expects)
+- Click **Generate JSON** to view your file, then copy or download it
+     
 
 **Note:**
 All note values are calculated as semitone offsets from MIDI note 60 (C3).
