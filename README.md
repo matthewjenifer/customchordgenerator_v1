@@ -78,6 +78,3 @@ Open an issue or PR on GitHub if you find bugs, want to request features, or con
 ---
 
 Made for musicians, producers, and anyone tired of building Maschine chord sets by hand.
-
-
-Made for musicians, producers, and anyone tired of building Maschine chord sets by hand.
