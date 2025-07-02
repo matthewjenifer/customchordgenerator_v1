@@ -60,42 +60,7 @@
         </header>
 
 
-        <div class="max-w-4xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl">
-            <h2 class="text-xl font-semibold text-purple-400 mb-4">Installation Path</h2>
-            <div class="overflow-x-auto">
-                <table class="min-w-full border border-gray-600 rounded-lg text-gray-200 bg-gray-900">
-                    <thead>
-                        <tr>
-                            <th class="px-4 py-2 border-b border-gray-600">Platform</th>
-                            <th class="px-4 py-2 border-b border-gray-600">Folder Path for User Chords</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="px-4 py-2 border-b border-gray-600">Windows</td>
-                            <td class="px-4 py-2 border-b border-gray-600"><code>%USERPROFILE%\AppData\Local\Native
-                                    Instruments\Shared\User Chords\</code></td>
-                        </tr>
-                        <tr>
-                            <td class="px-4 py-2 border-b border-gray-600">Mac</td>
-                            <td class="px-4 py-2 border-b border-gray-600"><code>~/Library/Application Support/Native
-                                    Instruments/Shared/User Chords/</code></td>
-                        </tr>
-                        <tr>
-                            <td class="px-4 py-2 border-b border-gray-600">Maschine+</td>
-                            <td class="px-4 py-2 border-b border-gray-600"><code>%USERSDCARD%/Native
-                                    Instruments/Maschine 3/User Chords/</code></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <p class="text-gray-400 mt-2 text-sm">
-                Place the generated JSON file in this location to use it with Maschine. Maschine will need to restart to
-                load your new chord set.
-            </p>
-        </div>
-
-
+        
         <div class="max-w-4xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl">
             <h2 class="text-xl font-semibold text-purple-400 mb-4">Supported Chord Types</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -173,19 +138,64 @@
             </div>
 
             <div id="outputSection" class="max-w-4xl mx-auto bg-gray-800 rounded-xl shadow-lg p-6 hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-purple-400">Generated JSON</h2>
-                    <div class="flex space-x-2">
-                        <button id="copyBtn"
-                            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition">
-                            <i class="fas fa-copy mr-2"></i>Copy
-                        </button>
-                        <button id="downloadBtn"
-                            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition">
-                            <i class="fas fa-download mr-2"></i>Download
-                        </button>
+
+                <!-- Inside your #outputSection, remove the wrapping flex div and do this: -->
+                <div id="installPathInstructions" class="mb-4">
+                    <h2 class="text-xl font-semibold text-purple-400 mb-2">Installation Path</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full border border-gray-600 rounded-lg text-gray-200 bg-gray-900">
+                            <thead>
+                                <tr>
+                                    <th class="px-4 py-2 border-b border-gray-600">Platform</th>
+                                    <th class="px-4 py-2 border-b border-gray-600">Folder Path for User Chords</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="px-4 py-2 border-b border-gray-600">Windows</td>
+                                    <td class="px-4 py-2 border-b border-gray-600">
+                                        <code>%USERPROFILE%\AppData\Local\Native Instruments\Shared\User Chords\</code>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-2 border-b border-gray-600">Mac</td>
+                                    <td class="px-4 py-2 border-b border-gray-600"><code>~/Library/Application
+                                            Support/Native Instruments/Shared/User Chords/</code></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-2 border-b border-gray-600">Maschine+</td>
+                                    <td class="px-4 py-2 border-b border-gray-600"><code>%USERSDCARD%/Native
+                                            Instruments/Maschine 3/User Chords/</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-gray-400 mt-2 text-sm">
+                        Place the generated JSON file in this location to use it with Maschine. Maschine will need to
+                        restart to load your new chord set.
+                    </p>
+                </div>
+                <div class="flex justify-end mb-4 space-x-2">
+                    <button id="copyBtn"
+                        class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition">
+                        <i class="fas fa-copy mr-2"></i>Copy
+                    </button>
+                    <button id="downloadBtn"
+                        class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition">
+                        <i class="fas fa-download mr-2"></i>Download
+                    </button>
+                </div>
+
+                <h2 class="text-xl font-semibold text-purple-400 mb-4">Generated JSON</h2>
+                <div class="relative">
+                    <pre id="jsonOutput" class="json-output p-4 bg-gray-900 rounded-lg overflow-auto max-h-96"></pre>
+                    <div id="copyNotification"
+                        class="copy-notification absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-md">
+                        Copied!
                     </div>
                 </div>
+
+
                 <div class="relative">
                     <pre id="jsonOutput" class="json-output p-4 bg-gray-900 rounded-lg overflow-auto max-h-96"></pre>
                     <div id="copyNotification"
