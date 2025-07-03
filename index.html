@@ -63,45 +63,45 @@
 
 
         <div class="max-w-4xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl">
-            <h2 class="text-xl font-semibold text-purple-400 mb-4">Supported Chord Types & Notations</h2>
-            
+            <h2 class="text-xl font-semibold text-purple-400 mb-4">Supported Chord Types & Notation Examples</h2>
+
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-    <div class="bg-gray-700 p-3 rounded-lg">
-        <h3 class="font-medium text-purple-300 mb-1">Basic Chords</h3>
-        <ul class="text-sm text-gray-300">
-            <li>Major (C, Cmaj)</li>
-            <li>Minor (Cm, Cmin)</li>
-            <li>Diminished (Cdim)</li>
-            <li>Augmented (Caug)</li>
-        </ul>
-    </div>
-    <div class="bg-gray-700 p-3 rounded-lg">
-        <h3 class="font-medium text-purple-300 mb-1">7th Chords</h3>
-        <ul class="text-sm text-gray-300">
-            <li>Major 7th (Cmaj7)</li>
-            <li>Dominant 7th (C7)</li>
-            <li>Minor 7th (Cm7)</li>
-            <li>Half-diminished (Cm7b5)</li>
-        </ul>
-    </div>
-    <div class="bg-gray-700 p-3 rounded-lg">
-        <h3 class="font-medium text-purple-300 mb-1">Extended Chords</h3>
-        <ul class="text-sm text-gray-300">
-            <li>6th (C6)</li>
-            <li>9th (C9)</li>
-            <li>11th (C11)</li>
-            <li>13th (C13)</li>
-        </ul>
-    </div>
-    <div class="bg-gray-700 p-3 rounded-lg">
-        <h3 class="font-medium text-purple-300 mb-1">Suspended Chords</h3>
-        <ul class="text-sm text-gray-300">
-            <li>Sus2 (Csus2)</li>
-            <li>Sus4 (Csus4)</li>
-            <li>Add9 (Cadd9)</li>
-        </ul>
-    </div>
-    <!-- <div class="bg-gray-700 p-3 rounded-lg">
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <h3 class="font-medium text-purple-300 mb-1">Basic Chords</h3>
+                    <ul class="text-sm text-gray-300">
+                        <li>Major (C, Cmaj)</li>
+                        <li>Minor (Cm, Cmin)</li>
+                        <li>Diminished (Cdim)</li>
+                        <li>Augmented (Caug)</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <h3 class="font-medium text-purple-300 mb-1">7th Chords</h3>
+                    <ul class="text-sm text-gray-300">
+                        <li>Major 7th (Cmaj7)</li>
+                        <li>Dominant 7th (C7)</li>
+                        <li>Minor 7th (Cm7)</li>
+                        <li>Half-diminished (Cm7b5)</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <h3 class="font-medium text-purple-300 mb-1">Extended Chords</h3>
+                    <ul class="text-sm text-gray-300">
+                        <li>6th (C6)</li>
+                        <li>9th (C9)</li>
+                        <li>11th (C11)</li>
+                        <li>13th (C13)</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <h3 class="font-medium text-purple-300 mb-1">Suspended Chords</h3>
+                    <ul class="text-sm text-gray-300">
+                        <li>Sus2 (Csus2)</li>
+                        <li>Sus4 (Csus4)</li>
+                        <li>Add9 (Cadd9)</li>
+                    </ul>
+                </div>
+                <!-- <div class="bg-gray-700 p-3 rounded-lg">
         <h3 class="font-medium text-purple-300 mb-1">Slash Chords</h3>
         <ul class="text-sm text-gray-300">
             <li>C/E (C major with E in the bass)</li>
@@ -122,7 +122,7 @@
             <li class="italic text-gray-400">Advanced or jazz/pop voicings</li>
         </ul>
     </div> -->
-</div>
+            </div>
 
 
 
@@ -168,14 +168,15 @@
                         </select>
                     </div>
                     <div class="flex flex-col justify-end mt-7">
-    <div class="flex items-center">
-        <input type="checkbox" id="romanNumeralMode" class="mr-2">
-        <label for="romanNumeralMode" class="text-gray-300">Roman Numeral Chord Conversion*</label>
-    </div>
-    <span class="text-xs text-gray-500 italic ml-6 mt-1">
-        *When selected, accidentals (out-of-key) chords will show on device as “?”
-    </span>
-</div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="romanNumeralMode" class="mr-2">
+                            <label for="romanNumeralMode" class="text-gray-300">Roman Numeral Chord Conversion*</label>
+                        </div>
+                        <span class="text-xs text-gray-500 italic ml-6 mt-1">
+                            *When selected, out-of-key chords will appear on device with original name instead of a
+                            numeral.
+                        </span>
+                    </div>
 
                 </div>
 
@@ -591,7 +592,8 @@
 
             const majorNumerals = ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
             const minorNumerals = ["i", "ii°", "III", "iv", "v", "VI",
-            "VII"]; // If you want minor key support later
+                "VII"
+            ]; // If you want minor key support later
 
             function getRomanNumeralName(chordRoot, chordType, key) {
                 // Get root number for both chord and key
@@ -658,7 +660,7 @@
                     else if (numeral === "IV") numeral = "iv";
                     else if (numeral === "V") numeral = "v";
                     else if (numeral === "vi") numeral =
-                    "VI"; // minor vi is VI in minor key, but let’s keep it simple
+                        "VI"; // minor vi is VI in minor key, but let’s keep it simple
                 }
                 if (/dim|°/i.test(chordType)) numeral += "°";
                 if (/aug|\+/i.test(chordType)) numeral += "+";
@@ -772,7 +774,6 @@
                         return;
                     }
 
-                    // Extract root and type again (a little duplication from parseChord, for clarity)
                     let mainChord = chordName;
                     if (chordName.includes("/")) {
                         [mainChord] = chordName.split("/");
@@ -785,7 +786,8 @@
 
                     let numeralName = chordName;
                     if (romanNumeralMode) {
-                        numeralName = getRomanNumeralName(root, type, key);
+                        const roman = getRomanNumeralName(root, type, key);
+                        numeralName = (roman === "?") ? chordName : roman;
                     }
 
                     chords.push({
@@ -793,6 +795,7 @@
                         notes: noteValues
                     });
                 }
+
 
 
                 // Generate UUID (simplified version)
@@ -891,6 +894,16 @@
             'floating-chat.donateButton.text-color': '#fff'
         });
     </script>
+    <script>
+        fetch('http://localhost:3001/api/visit')
+            .then(res => res.json())
+            .then(data => {
+                // You can display this in your UI if you want
+                console.log('Unique visitors:', data.uniqueVisitors);
+                // Example: document.getElementById('visitorCount').innerText = "Unique visitors: " + data.uniqueVisitors;
+            });
+    </script>
+
 </body>
 
 </html>
