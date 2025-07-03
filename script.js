@@ -40,6 +40,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (e.shiftKey && (e.key === 'A' || e.key === 'a')) {
                     const annotateBtn = document.getElementById('annotateExportBtn');
                     if (annotateBtn) annotateBtn.style.display = "block";
+                    const romanNumeralDiv = document.getElementById('romanNumeralDiv');
+                    if (romanNumeralDiv) romanNumeralDiv.style.display = "block";
+
                 }
             });
 
