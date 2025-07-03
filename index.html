@@ -123,10 +123,6 @@
         </ul>
     </div> -->
             </div>
-
-
-
-
             <div class="max-w-4xl mx-auto bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
@@ -251,6 +247,13 @@
                     </button>
                 </div>
 
+                <!-- Annotated Export Button (Dev use) -->
+                <button id="annotateExportBtn" style="display:none"
+                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition">
+                    <i class="fas fa-file-alt mr-2"></i>Export Annotated Theory (.txt)
+                </button>
+
+
                 <h2 class="text-xl font-semibold text-purple-400 mb-4">Generated JSON</h2>
                 <div class="relative">
                     <pre id="jsonOutput" class="json-output p-4 bg-gray-900 rounded-lg overflow-auto max-h-96"></pre>
@@ -260,14 +263,6 @@
                     </div>
                 </div>
 
-
-                <div class="relative">
-                    <pre id="jsonOutput" class="json-output p-4 bg-gray-900 rounded-lg overflow-auto max-h-96"></pre>
-                    <div id="copyNotification"
-                        class="copy-notification absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-md">
-                        Copied!
-                    </div>
-                </div>
 
                 <div class="max-w-4xl mx-auto mt-8 p-6 bg-gray-800 rounded-xl flex justify-center items-center"
                     style="width: 100px; height: 100px; object-fit: contain;">
@@ -326,6 +321,58 @@
             generateBtn.addEventListener('click', generateJSON);
             copyBtn.addEventListener('click', copyToClipboard);
             downloadBtn.addEventListener('click', downloadJSON);
+
+            document.addEventListener('keydown', function (e) {
+                // If Shift + A is pressed
+                if (e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+                    const annotateBtn = document.getElementById('annotateExportBtn');
+                    if (annotateBtn) annotateBtn.style.display = "block";
+                }
+            });
+
+
+            // Annotated export (private feature)
+            const annotateExportBtn = document.getElementById('annotateExportBtn');
+            if (annotateExportBtn) {
+                annotateExportBtn.addEventListener('click', function () {
+                    const setName = document.getElementById('setName').value.trim() || 'Chord Set';
+                    const key = document.getElementById('keySelector').value;
+                    // Pull from the chordContainer you initialized at the top
+                    const chordInputs = chordContainer.querySelectorAll('input');
+
+                    // Build chordNames just like in generateJSON
+                    const chordNames = Array.from(chordInputs).map(input => input.value.trim()).filter(
+                        name => name);
+
+                    if (chordNames.length === 0) {
+                        alert('No chords to annotate.');
+                        return;
+                    }
+
+                    let output = `Chord Set: ${setName}\nKey: ${key} Major\n\n`;
+                    output += "Pad\tChord\tAnalysis\n";
+                    output += "----------------------------------------\n";
+                    chordNames.forEach((chord, i) => {
+                        let theory = detectChordOriginAuto(chord, key);
+                        output += `${i + 1}\t${chord}\t${theory}\n`;
+                    });
+
+                    // Download as text file
+                    const blob = new Blob([output], {
+                        type: 'text/plain'
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `annotated_${setName.replace(/\s+/g, "_")}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            }
+
+
 
             // Function to add a new chord input field
             function addChordInput() {
@@ -672,6 +719,108 @@
                 return numeral;
             }
 
+            // let theoryInfo = detectChordOriginAuto(chordName, key);
+
+
+            // --- Chord Theory Detection Helpers ---
+
+            const MAJOR_SCALE_INTERVALS = [0, 2, 4, 5, 7, 9, 11];
+
+            const MODE_INFO = {
+                "ionian": ["maj", "min", "min", "maj", "maj", "min", "dim"],
+                "dorian": ["min", "min", "maj", "maj", "min", "dim", "maj"],
+                "phrygian": ["min", "maj", "maj", "min", "dim", "maj", "min"],
+                "lydian": ["maj", "maj", "min", "dim", "maj", "min", "min"],
+                "mixolydian": ["maj", "min", "dim", "maj", "min", "min", "maj"],
+                "aeolian": ["min", "dim", "maj", "min", "min", "maj", "maj"],
+                "locrian": ["dim", "maj", "min", "min", "maj", "maj", "min"],
+            };
+
+            const FLAT_KEYS = ["F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"];
+            const ALL_ROOTS_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+            const ALL_ROOTS_FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+            const MODE_NAMES = ["ionian", "dorian", "phrygian", "lydian", "mixolydian", "aeolian", "locrian"];
+
+            function getNoteNames(keyRoot) {
+                return FLAT_KEYS.includes(keyRoot) ? ALL_ROOTS_FLAT : ALL_ROOTS_SHARP;
+            }
+
+            function getScaleRoots(keyRoot, mode) {
+                const noteNames = getNoteNames(keyRoot);
+                let rootIdx = noteNames.indexOf(keyRoot);
+                if (rootIdx === -1) throw new Error("Unsupported key: " + keyRoot);
+
+                let intervals = MAJOR_SCALE_INTERVALS.slice();
+                let modeIdx = MODE_NAMES.indexOf(mode.toLowerCase());
+                if (modeIdx === -1) modeIdx = 0; // default to major (ionian)
+                intervals = intervals.slice(modeIdx).concat(intervals.slice(0, modeIdx));
+                let scale = [];
+                for (let i = 0; i < intervals.length; i++) {
+                    let noteIdx = (rootIdx + intervals[i]) % 12;
+                    scale.push(noteNames[noteIdx]);
+                }
+                return scale;
+            }
+
+            function getDiatonicChords(keyRoot, mode) {
+                const scale = getScaleRoots(keyRoot, mode);
+                const qualities = MODE_INFO[mode.toLowerCase()];
+                return scale.map((note, i) =>
+                    (note + (qualities[i] === "maj" ? "" : qualities[i]))
+                );
+            }
+
+            // Returns Roman numeral string for a degree (e.g., "bVII", "iv", "I", etc.)
+            function romanNumeral(degree, quality, accidental = 0) {
+                const numerals = ["I", "II", "III", "IV", "V", "VI", "VII"];
+                let n = numerals[degree % 7];
+                if (quality === "min") n = n.toLowerCase();
+                if (quality === "dim") n = n.toLowerCase() + "°";
+                if (accidental === 1) n = "#" + n;
+                if (accidental === -1) n = "b" + n;
+                return n;
+            }
+
+            function capitalize(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+
+            // Main detector: call with (chordName, keyRoot) -- always assumes "major"
+            function detectChordOriginAuto(chordName, keyRoot) {
+                // Parse chord root and basic type
+                let mainChord = chordName.split("/")[0].trim();
+                const match = mainChord.match(/^([A-G][b#]?)(m|dim|maj|min)?/i);
+                if (!match) return "Unrecognized chord";
+                let root = match[1];
+                let quality = match[2] || '';
+                if (quality.toLowerCase() === "min") quality = "m";
+                if (quality.toLowerCase() === "maj") quality = "";
+                if (quality.toLowerCase() === "dim") quality = "dim";
+                let basicChord = root + quality;
+
+                // 1. Diatonic in main key (Ionian)?
+                const mainMode = "ionian";
+                const diatonics = getDiatonicChords(keyRoot, mainMode);
+                if (diatonics.includes(basicChord)) {
+                    const idx = diatonics.indexOf(basicChord);
+                    return `Diatonic (I${idx+1} - ${romanNumeral(idx, MODE_INFO[mainMode][idx])} in ${keyRoot} Major)`;
+                }
+
+                // 2. Diatonic in any parallel mode? (skip Ionian)
+                for (let mode of MODE_NAMES) {
+                    if (mode === mainMode) continue;
+                    const modeChords = getDiatonicChords(keyRoot, mode);
+                    if (modeChords.includes(basicChord)) {
+                        const idx = modeChords.indexOf(basicChord);
+                        const numeral = romanNumeral(idx, MODE_INFO[mode][idx]);
+                        return `Borrowed from parallel ${capitalize(mode)} (${numeral} in ${keyRoot} ${capitalize(mode)})`;
+                    }
+                }
+
+                // 3. Not diatonic in any parallel mode
+                return "Non-diatonic (no common modal origin)";
+            }
+
 
 
             // Function to parse chord name and return note values
@@ -796,8 +945,6 @@
                     });
                 }
 
-
-
                 // Generate UUID (simplified version)
                 function generateUUID() {
                     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -819,7 +966,10 @@
                 // Display the JSON
                 jsonOutput.textContent = JSON.stringify(jsonData, null, 2);
                 outputSection.classList.remove('hidden');
+                document.getElementById('annotateExportBtn').style.display = "none";
             }
+
+
 
             // Function to copy JSON to clipboard
             function copyToClipboard() {
