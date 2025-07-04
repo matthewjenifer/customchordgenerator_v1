@@ -42,6 +42,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (annotateBtn) annotateBtn.style.display = "block";
             const romanNumeralDiv = document.getElementById('romanNumeralDiv');
             if (romanNumeralDiv) romanNumeralDiv.style.display = "block";
+            const keySelectorDiv = document.getElementById('keySelectorDiv');
+            if (keySelectorDiv) keySelectorDiv.style.display = "block";
 
         }
     });
