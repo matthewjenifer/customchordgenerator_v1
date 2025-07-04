@@ -675,10 +675,16 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
+        let finalName;
+        if (key === "_") {
+            finalName = setName;
+        } else {
+            finalName = setName ? (key + "_" + setName) : key;
+        }
         // Create the JSON object
         const jsonData = {
             chords: chords,
-            name: setName ? (key + "_" + setName) : key,
+            name: finalName,
             typeId: "native-instruments-chord-set",
             uuid: generateUUID(),
             version: "1.0.0"
