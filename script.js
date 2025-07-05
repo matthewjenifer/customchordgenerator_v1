@@ -45,6 +45,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const keySelectorDiv = document.getElementById('keySelectorDiv');
             if (keySelectorDiv) keySelectorDiv.style.display = "block";
 
+            // Make JSON output editable on Shift+Z
+            const jsonOutput = document.getElementById('jsonOutput');
+            if (jsonOutput) jsonOutput.setAttribute('contenteditable', 'true');
+
         }
     });
 
