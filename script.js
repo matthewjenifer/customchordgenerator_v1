@@ -212,6 +212,14 @@ document.addEventListener('DOMContentLoaded', function () {
         'm#5': [0, 3, 8],
         'mi#5': [0, 3, 8],
         'min#5': [0, 3, 8],
+
+        // Dominant sus
+        '7sus4': [0, 5, 7, 10],
+
+        // Altered dominants (single alteration)
+        '7#9':  [0, 4, 7, 10, 15], // #9 = 15
+        '7b13': [0, 4, 7, 10, 20], // b13 = 20
+
     };
 
 
@@ -595,16 +603,19 @@ document.addEventListener('DOMContentLoaded', function () {
             noteValues.push(midiToValue(rootMidi - 12));
         }
 
-        // 4. Add root, 3rd, 5th, 7th, etc. in main octave
-        noteValues.push(midiToValue(rootMidi)); // Root (main octave)
-        if (intervals.length > 1) noteValues.push(midiToValue(rootMidi + intervals[1]));
-        if (intervals.length > 2) noteValues.push(midiToValue(rootMidi + intervals[2]));
-        if (intervals.length > 3) noteValues.push(midiToValue(rootMidi + intervals[3]));
+        // 4. Add chord tones: root + ALL intervals (including #9, b13, etc.)
+        noteValues.push(midiToValue(rootMidi)); // root
 
-        // 5. For extended chords, add highest interval one octave up (if present)
-        if (intervals.length > 3) {
-            noteValues.push(midiToValue(rootMidi + intervals[intervals.length - 1] + 12));
+        for (let i = 1; i < intervals.length; i++) {
+          noteValues.push(midiToValue(rootMidi + intervals[i]));
         }
+
+        // 5.Duplicate root octave ONLY for non-altered chords
+        if (!/[b#](9|11|13)/.test(type)) {
+          noteValues.push(midiToValue(rootMidi + 12));
+        }
+
+
 
         // 6. Remove duplicates and sort ascending
         noteValues = Array.from(new Set(noteValues));
