@@ -220,6 +220,12 @@ document.addEventListener('DOMContentLoaded', function () {
         '7#9':  [0, 4, 7, 10, 15], // #9 = 15
         '7b13': [0, 4, 7, 10, 20], // b13 = 20
 
+        '7sus2': [0, 2, 7, 10],      // Eb7sus2
+        '7add11': [0, 4, 7, 10, 17], // A7add11 (your preferred "11 behavior" basically)
+        '7#11': [0, 4, 7, 10, 18],   // B7#11
+        '7alt': [0, 4, 6, 10, 15, 20], // C7alt (common altered set: b5, #9, b13)
+
+
     };
 
 
@@ -299,6 +305,13 @@ document.addEventListener('DOMContentLoaded', function () {
         'm6/9': 'm6/9',
         'min6/9': 'm6/9',
 
+        // --- slash-friendly / common shorthand ---
+        'sus7': '7sus4',     // BbSus7 -> Bb7sus4 (common shorthand)
+        '7sus': '7sus4',     // sometimes people type this
+        'add7': '7',         // Fadd7 -> treat like F7 (triad + b7)
+        '7add11': '7add11',  // allow as explicit type
+
+
         // Chord names can be extended with more cases as you see them in your user data
     };
 
@@ -354,18 +367,51 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     function getChordIntervals(type) {
-        // Try direct match
-        if (chordMap[type]) return chordMap[type];
-        // Try longest substring in chordMap (not just start)
-        let longestMatch = '';
-        for (let key in chordMap) {
-            if (type.includes(key) && key.length > longestMatch.length) {
-                longestMatch = key;
-            }
-        }
-        if (longestMatch) return chordMap[longestMatch];
-        return chordMap[''];
+  // 1) direct match wins
+  if (chordMap[type]) return chordMap[type];
+
+  // 2) If it's a dominant with modifiers, build it
+  // Supports: 7b9, 7#9, 7b13, 7#11, 7b5, 7#5, combos like 7b9#5, plus sus2/sus4 and add11
+  if (type.startsWith('7')) {
+    let intervals = [0, 4, 7, 10]; // base dominant 7
+
+    // SUS replaces the 3rd
+    if (type.includes('sus2')) {
+      intervals = [0, 2, 7, 10];
+    } else if (type.includes('sus4') || type === '7sus') {
+      intervals = [0, 5, 7, 10];
     }
+
+    // add11 (keep 3rd, add 11)
+    if (type.includes('add11')) intervals.push(17);
+
+    // alterations
+    const hasB5 = type.includes('b5');
+    const hasSharp5 = type.includes('#5');
+    const hasB9 = type.includes('b9');
+    const hasSharp9 = type.includes('#9');
+    const hasSharp11 = type.includes('#11');
+    const hasB13 = type.includes('b13');
+
+    // handle 5th alteration by replacing 7 if present
+    if (hasB5 || hasSharp5) {
+      intervals = intervals.map(i => (i === 7 ? (hasB5 ? 6 : 8) : i));
+    }
+
+    if (hasB9) intervals.push(13);
+    if (hasSharp9) intervals.push(15);
+    if (hasSharp11) intervals.push(18);
+    if (hasB13) intervals.push(20);
+
+    // unique + sorted
+    intervals = Array.from(new Set(intervals)).sort((a, b) => a - b);
+    return intervals;
+  }
+
+  // 3) fallback: plain triad
+  return chordMap[''];
+}
+
 
     const majorNumerals = ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
     const minorNumerals = ["i", "ii°", "III", "iv", "v", "VI",
@@ -555,74 +601,72 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Function to parse chord name and return note values
     function parseChord(chordName) {
-        // 1. First, check explicit voicing dictionary for an exact match (with strict / keys)
-        if (explicitVoicing[chordName]) {
-            return explicitVoicing[chordName];
-        }
+  // 1) Exact-match override
+  if (explicitVoicing[chordName]) return explicitVoicing[chordName];
 
-        // 2. Algorithmic fallback if not found in explicit voicing
-        let mainChord = chordName;
-        let bassNote = null;
+  let mainChord = chordName;
+  let bassNote = null;
 
-        // Handle slash chords
-        if (chordName.includes("/")) {
-            [mainChord, bassNote] = chordName.split("/");
-            mainChord = mainChord.trim();
-            bassNote = bassNote.trim();
-        }
+  // 2) Slash chords
+  if (chordName.includes("/")) {
+    [mainChord, bassNote] = chordName.split("/");
+    mainChord = mainChord.trim();
+    bassNote = bassNote.trim();
+  }
 
-        // Extract root note and chord type
-        const rootMatch = mainChord.match(/^([A-Ga-g][#b]?)/i);
-        if (!rootMatch) return null;
+  // 3) Root + type
+  const rootMatch = mainChord.match(/^([A-Ga-g][#b]?)/i);
+  if (!rootMatch) return null;
 
-        let root = rootMatch[1];
-        root = root.charAt(0).toUpperCase() + (root.length > 1 ? root.slice(1).toLowerCase() : '');
+  let root = rootMatch[1];
+  root = root.charAt(0).toUpperCase() + (root.length > 1 ? root.slice(1).toLowerCase() : "");
 
-        let type = mainChord.slice(rootMatch[0].length).toLowerCase();
-        type = chordAliases[type] || type;
+  let type = mainChord.slice(rootMatch[0].length).toLowerCase();
+  type = chordAliases[type] || type;
 
-        // Use your getChordIntervals function for the most accurate mapping
-        const intervals = getChordIntervals(type);
-        const rootMidi = rootNoteMap[root] + 48;
-        if (rootMidi === undefined) return null;
+  const intervals = getChordIntervals(type);
 
-        let noteValues = [];
+  const rootSemitone = rootNoteMap[root];
+  if (rootSemitone === undefined) return null;
 
-        // 3. Handle bass note (for slash chords)
-        if (bassNote) {
-            let bassRootMatch = bassNote.match(/^([A-Ga-g][#b]?)/i);
-            if (bassRootMatch) {
-                let bassRoot = bassRootMatch[1];
-                bassRoot = bassRoot.charAt(0).toUpperCase() + (bassRoot.length > 1 ? bassRoot.slice(1)
-                    .toLowerCase() : '');
-                let bassMidi = rootNoteMap[bassRoot] + 48;
-                let bassValue = midiToValue(bassMidi - 12);
-                noteValues.push(bassValue);
-            }
-        } else {
-            noteValues.push(midiToValue(rootMidi - 12));
-        }
+  const rootMidi = rootSemitone + 48;
 
-        // 4. Add chord tones: root + ALL intervals (including #9, b13, etc.)
-        noteValues.push(midiToValue(rootMidi)); // root
+  let noteValues = [];
 
-        for (let i = 1; i < intervals.length; i++) {
-          noteValues.push(midiToValue(rootMidi + intervals[i]));
-        }
-
-        // 5.Duplicate root octave ONLY for non-altered chords
-        if (!/[b#](9|11|13)/.test(type)) {
-          noteValues.push(midiToValue(rootMidi + 12));
-        }
-
-
-
-        // 6. Remove duplicates and sort ascending
-        noteValues = Array.from(new Set(noteValues));
-        noteValues.sort((a, b) => a - b);
-
-        return noteValues;
+  // 4) Bass handling
+  if (bassNote) {
+    const bassRootMatch = bassNote.match(/^([A-Ga-g][#b]?)/i);
+    if (bassRootMatch) {
+      let bassRoot = bassRootMatch[1];
+      bassRoot = bassRoot.charAt(0).toUpperCase() + (bassRoot.length > 1 ? bassRoot.slice(1).toLowerCase() : "");
+      const bassSemitone = rootNoteMap[bassRoot];
+      if (bassSemitone !== undefined) {
+        const bassMidi = bassSemitone + 48;
+        noteValues.push(midiToValue(bassMidi - 12));
+      }
     }
+  } else {
+    // default bass = root down an octave
+    noteValues.push(midiToValue(rootMidi - 12));
+  }
+
+  // 5) Chord tones: root + all intervals
+  noteValues.push(midiToValue(rootMidi)); // root
+  for (let i = 1; i < intervals.length; i++) {
+    noteValues.push(midiToValue(rootMidi + intervals[i]));
+  }
+
+  // 6) Optional octave root (ONLY when safe)
+  // Avoid for altered dominants / tension-heavy stuff (b/# 5,9,11,13 or "alt")
+  if (!/^7.*([b#](5|9|11|13)|alt)/.test(type)) {
+    noteValues.push(midiToValue(rootMidi + 12));
+  }
+
+  // 7) Clean up
+  noteValues = Array.from(new Set(noteValues)).sort((a, b) => a - b);
+  return noteValues;
+}
+
 
 
 
