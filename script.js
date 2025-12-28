@@ -13,6 +13,367 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+const downloadBundleBtn = document.getElementById("downloadBundleBtn");
+if (downloadBundleBtn) {
+  downloadBundleBtn.addEventListener("click", downloadBundleZip);
+}
+
+
+    // --- Bundle Builder State (in-memory) ---
+
+const BUNDLE_SLOT_COUNT = 16;
+
+const bundleState = {
+  // optional project meta
+  bundleName: "",                 // user-facing bundle/project name (optional)
+  filePrefix: "user_chord_set_",   // used for zip filenames
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+
+  // navigation
+  currentSlotIndex: 0,             // 0..15
+
+  // slots
+  slots: Array.from({ length: BUNDLE_SLOT_COUNT }, (_, i) => ({
+    index: i,                      // 0..15
+    displayName: `Set ${String(i + 1).padStart(2, "0")}`, // optional label in UI
+    fileName: `user_chord_set_${String(i + 1).padStart(2, "0")}.json`,
+
+    // payload
+    data: null,                    // the JSON object your generateJSON() builds
+    jsonString: "",                // cached string for download/zip
+    uuid: "",                      // convenience: store data.uuid here too
+
+    // validation/status
+    status: "empty",               // "empty" | "saved" | "error"
+    error: "",                     // last error if status === "error"
+
+    // optional helpful metadata (for UI/persistence)
+    key: "_",                      // key selector value when saved
+    romanNumeralMode: false,       // whether roman numerals were on
+    chordCount: 0,                 // number of chords saved
+    savedAt: null,                 // timestamp
+})),
+};
+
+loadBundleState();
+
+
+function goToSlot(index) {
+  if (index < 0 || index >= BUNDLE_SLOT_COUNT) return;
+
+  bundleState.currentSlotIndex = index;
+  updateSlotIndicator();
+}
+
+function nextSlot() {
+  if (bundleState.currentSlotIndex < BUNDLE_SLOT_COUNT - 1) {
+    goToSlot(bundleState.currentSlotIndex + 1);
+  }
+}
+
+function prevSlot() {
+  if (bundleState.currentSlotIndex > 0) {
+    goToSlot(bundleState.currentSlotIndex - 1);
+  }
+}
+
+
+function saveCurrentSetToSlot(slotIndex) {
+  const result = buildJsonDataFromUI();
+
+  const slot = bundleState.slots[slotIndex];
+  bundleState.updatedAt = Date.now();
+
+  if (result.error) {
+    slot.status = "error";
+    slot.error = result.error;
+    console.warn(`Slot ${slotIndex + 1}:`, result.error);
+    return false;
+  }
+
+  slot.data = result.jsonData;
+  slot.jsonString = result.jsonString;
+  slot.uuid = result.jsonData.uuid;
+  slot.key = result.meta.key;
+  slot.romanNumeralMode = result.meta.romanNumeralMode;
+  slot.chordCount = result.meta.chordCount;
+  slot.savedAt = Date.now();
+  slot.status = "saved";
+  slot.error = "";
+
+  console.log(`Saved set to slot ${slotIndex + 1}`);
+  return true;
+}
+
+
+
+function saveCurrentSlot() {
+  return saveCurrentSetToSlot(bundleState.currentSlotIndex);
+}
+
+function saveAndAdvance() {
+  const success = saveCurrentSlot();
+  if (success) nextSlot();
+}
+
+function validateFullBundle() {
+  const missing = bundleState.slots.filter(slot => slot.status !== "saved");
+
+  if (missing.length > 0) {
+    return {
+      valid: false,
+      missingSlots: missing.map(s => s.index + 1)
+    };
+  }
+
+  return { valid: true };
+}
+
+// ---------- Bundle Persistence ----------
+const BUNDLE_STORAGE_KEY = "masch_bundle_state_v1";
+
+function serializeBundleState() {
+  return {
+    bundleName: bundleState.bundleName,
+    filePrefix: bundleState.filePrefix,
+    currentSlotIndex: bundleState.currentSlotIndex,
+    slots: bundleState.slots.map(s => ({
+      index: s.index,
+      displayName: s.displayName,
+      fileName: s.fileName,
+      jsonString: s.jsonString,
+      uuid: s.uuid,
+      status: s.status,
+      error: s.error,
+      key: s.key,
+      romanNumeralMode: s.romanNumeralMode,
+      chordCount: s.chordCount,
+      savedAt: s.savedAt
+    }))
+  };
+}
+
+function persistBundleState() {
+  try {
+    localStorage.setItem(BUNDLE_STORAGE_KEY, JSON.stringify(serializeBundleState()));
+  } catch (e) {
+    console.warn("Could not persist bundle state:", e);
+  }
+}
+
+function loadBundleState() {
+  try {
+    const raw = localStorage.getItem(BUNDLE_STORAGE_KEY);
+    if (!raw) return;
+
+    const saved = JSON.parse(raw);
+    if (!saved || !Array.isArray(saved.slots)) return;
+
+    bundleState.bundleName = saved.bundleName || "";
+    bundleState.filePrefix = saved.filePrefix || bundleState.filePrefix;
+    bundleState.currentSlotIndex = Number.isInteger(saved.currentSlotIndex) ? saved.currentSlotIndex : 0;
+
+    // merge slots (don’t replace object identity)
+    saved.slots.forEach(ss => {
+      const slot = bundleState.slots[ss.index];
+      if (!slot) return;
+
+      slot.displayName = ss.displayName ?? slot.displayName;
+      slot.fileName = ss.fileName ?? slot.fileName;
+      slot.jsonString = ss.jsonString ?? "";
+      slot.data = slot.jsonString ? JSON.parse(slot.jsonString) : null;
+      slot.uuid = ss.uuid ?? (slot.data?.uuid || "");
+      slot.status = ss.status || (slot.jsonString ? "saved" : "empty");
+      slot.error = ss.error || "";
+      slot.key = ss.key ?? "_";
+      slot.romanNumeralMode = !!ss.romanNumeralMode;
+      slot.chordCount = Number(ss.chordCount || 0);
+      slot.savedAt = ss.savedAt ?? null;
+    });
+  } catch (e) {
+    console.warn("Could not load bundle state:", e);
+  }
+}
+
+// ---------- Slot Grid ----------
+function renderSlotGrid() {
+  const grid = document.getElementById("bundleSlotGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+
+  bundleState.slots.forEach((slot, index) => {
+    const btn = document.createElement("button");
+    const slotNum = String(index + 1).padStart(2, "0");
+    btn.textContent = slotNum;
+
+    btn.className = "px-3 py-3 rounded-lg border text-sm font-semibold transition";
+
+    if (index === bundleState.currentSlotIndex) {
+      btn.classList.add("ring-2", "ring-purple-500");
+    }
+
+    if (slot.status === "saved") {
+      btn.classList.add("bg-green-700", "border-green-600", "text-white");
+    } else if (slot.status === "error") {
+      btn.classList.add("bg-red-700", "border-red-600", "text-white");
+    } else {
+      btn.classList.add("bg-gray-700", "border-gray-600", "text-gray-300", "hover:bg-gray-600");
+    }
+
+    btn.addEventListener("click", () => {
+      goToSlot(index);
+      // goToSlot already calls updateSlotIndicator()
+    });
+
+    grid.appendChild(btn);
+  });
+}
+
+// ---------- ZIP button gating ----------
+function updateZipButtonState() {
+  const btn = document.getElementById("downloadBundleBtn");
+  if (!btn) return;
+
+  const check = validateFullBundle();
+  btn.disabled = !check.valid;
+  btn.title = check.valid ? "Download bundle zip" : `Missing slots: ${check.missingSlots.join(", ")}`;
+}
+
+// ---------- fileNumber locking / syncing ----------
+function setFileNumberBundleMode(isEnabled) {
+  const fileNumberInput = document.getElementById("fileNumber");
+  if (!fileNumberInput) return;
+
+  if (isEnabled) {
+    fileNumberInput.disabled = true;
+    fileNumberInput.classList.add("opacity-50", "cursor-not-allowed");
+    fileNumberInput.value = String(bundleState.currentSlotIndex + 1);
+  } else {
+    fileNumberInput.disabled = false;
+    fileNumberInput.classList.remove("opacity-50", "cursor-not-allowed");
+  }
+}
+
+// ---------- Clear bundle ----------
+function clearBundle() {
+  for (const slot of bundleState.slots) {
+    slot.data = null;
+    slot.jsonString = "";
+    slot.uuid = "";
+    slot.status = "empty";
+    slot.error = "";
+    slot.key = "_";
+    slot.romanNumeralMode = false;
+    slot.chordCount = 0;
+    slot.savedAt = null;
+  }
+  bundleState.currentSlotIndex = 0;
+  bundleState.updatedAt = Date.now();
+  persistBundleState();
+  updateSlotIndicator();
+}
+
+// ---------- IMPORTANT: replace your current updateSlotIndicator with this upgraded one ----------
+function updateSlotIndicator() {
+  const slot = bundleState.slots[bundleState.currentSlotIndex];
+  const slotNum = String(slot.index + 1).padStart(2, "0");
+
+  const currentSlotLabel = document.getElementById("currentSlotLabel");
+  const currentSlotStatus = document.getElementById("currentSlotStatus");
+  const currentSlotMeta = document.getElementById("currentSlotMeta");
+
+  if (currentSlotLabel) currentSlotLabel.textContent = `${slotNum}/${BUNDLE_SLOT_COUNT}`;
+
+  if (currentSlotStatus) {
+    const label = slot.status === "saved" ? "Saved" : (slot.status === "error" ? "Error" : "Empty");
+    currentSlotStatus.textContent = label;
+    currentSlotStatus.className = "text-xs px-2 py-1 rounded-md border";
+
+    if (slot.status === "saved") {
+      currentSlotStatus.classList.add("bg-green-700", "text-white", "border-green-600");
+    } else if (slot.status === "error") {
+      currentSlotStatus.classList.add("bg-red-700", "text-white", "border-red-600");
+    } else {
+      currentSlotStatus.classList.add("bg-gray-700", "text-gray-200", "border-gray-600");
+    }
+  }
+
+  if (currentSlotMeta) {
+    if (slot.status === "saved") {
+      const key = slot.key && slot.key !== "_" ? slot.key : "—";
+      const rn = slot.romanNumeralMode ? "RN" : "No RN";
+      currentSlotMeta.textContent = `${slot.chordCount} chords | Key: ${key} | ${rn}`;
+      currentSlotMeta.classList.remove("hidden");
+    } else if (slot.status === "error") {
+      currentSlotMeta.textContent = slot.error || "Error saving slot";
+      currentSlotMeta.classList.remove("hidden");
+    } else {
+      currentSlotMeta.textContent = "—";
+      currentSlotMeta.classList.add("hidden");
+    }
+  }
+
+  // Keep fileNumber synced (in bundle mode it’s disabled)
+  const fileNumberInput = document.getElementById("fileNumber");
+  if (fileNumberInput) fileNumberInput.value = String(slot.index + 1);
+
+  renderSlotGrid();
+  updateZipButtonState();
+  persistBundleState();
+}
+
+
+// Bundle UI wiring
+const bundlePrevBtn = document.getElementById("bundlePrevBtn");
+const bundleNextBtn = document.getElementById("bundleNextBtn");
+const bundleSaveBtn = document.getElementById("bundleSaveBtn");
+const bundleSaveNextBtn = document.getElementById("bundleSaveNextBtn");
+const bundleClearSlotBtn = document.getElementById("bundleClearSlotBtn");
+const bundleClearBundleBtn = document.getElementById("bundleClearBundleBtn");
+const bundleNameInput = document.getElementById("bundleNameInput");
+
+if (bundlePrevBtn) bundlePrevBtn.addEventListener("click", prevSlot);
+if (bundleNextBtn) bundleNextBtn.addEventListener("click", nextSlot);
+
+if (bundleSaveBtn) bundleSaveBtn.addEventListener("click", () => {
+  const ok = saveCurrentSlot();
+  if (ok) updateSlotIndicator();
+});
+
+if (bundleSaveNextBtn) bundleSaveNextBtn.addEventListener("click", () => {
+  saveAndAdvance();
+  updateSlotIndicator();
+});
+
+if (bundleClearSlotBtn) bundleClearSlotBtn.addEventListener("click", () => {
+  const slot = bundleState.slots[bundleState.currentSlotIndex];
+  slot.data = null;
+  slot.jsonString = "";
+  slot.uuid = "";
+  slot.status = "empty";
+  slot.error = "";
+  slot.key = "_";
+  slot.romanNumeralMode = false;
+  slot.chordCount = 0;
+  slot.savedAt = null;
+  updateSlotIndicator();
+});
+
+if (bundleClearBundleBtn) bundleClearBundleBtn.addEventListener("click", clearBundle);
+
+if (bundleNameInput) {
+  bundleNameInput.addEventListener("input", (e) => {
+    bundleState.bundleName = e.target.value.trim();
+    updateZipButtonState();
+    persistBundleState();
+  });
+}
+
+
+updateSlotIndicator();
+
 
     // Initialize chord inputs
     const chordContainer = document.querySelector('.chord-input-container');
@@ -44,6 +405,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (romanNumeralDiv) romanNumeralDiv.style.display = "block";
             const keySelectorDiv = document.getElementById('keySelectorDiv');
             if (keySelectorDiv) keySelectorDiv.style.display = "block";
+            const bundleSection = document.getElementById("bundleSection");
+            if (bundleSection) bundleSection.classList.remove("hidden");
+            setFileNumberBundleMode(true);
+            updateSlotIndicator();
+
 
             // Make JSON output editable on Shift+Z
             const jsonOutput = document.getElementById('jsonOutput');
@@ -668,96 +1034,112 @@ document.addEventListener('DOMContentLoaded', function () {
 }
 
 
+function isBundleModeEnabled() {
+  const bundleSection = document.getElementById("bundleSection");
+  const fileNumberInput = document.getElementById("fileNumber");
+
+  // Bundle mode is considered "on" once Shift+Z reveals the bundle section OR locks fileNumber
+  const sectionVisible = bundleSection && !bundleSection.classList.contains("hidden");
+  const fileLocked = fileNumberInput && fileNumberInput.disabled;
+
+  return !!(sectionVisible || fileLocked);
+}
 
 
-    // Function to generate JSON output
-    function generateJSON() {
+   // Function to generate JSON output (now also auto-saves in bundle mode)
+function generateJSON() {
+  const result = buildJsonDataFromUI();
 
-        const setName = document.getElementById('setName').value.trim();
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
 
-        if (!setName) {
-            alert('Please enter a chord set name');
-            return;
-        }
+  // Display the JSON (single source of truth)
+  jsonOutput.textContent = result.jsonString;
+  outputSection.classList.remove('hidden');
+  document.getElementById('annotateExportBtn').style.display = "none";
 
-        const chordInputs = chordContainer.querySelectorAll('input');
-        const chords = [];
+  // Auto-save into the current bundle slot if bundle mode is enabled
+  if (isBundleModeEnabled()) {
+    const ok = saveCurrentSlot();
 
-        // Get all chord names from inputs
-        const chordNames = Array.from(chordInputs).map(input => input.value.trim()).filter(name =>
-            name);
+    // saveCurrentSlot will mark slot.error/slot.status if anything goes wrong
+    updateSlotIndicator();
 
-        if (chordNames.length === 0) {
-            alert('Please enter at least one chord');
-            return;
-        }
-
-        const romanNumeralMode = document.getElementById('romanNumeralMode').checked;
-
-
-        const key = document.getElementById('keySelector').value;
-
-
-        for (const chordName of chordNames) {
-            const noteValues = parseChord(chordName);
-            if (!noteValues) {
-                alert(`Invalid chord format: ${chordName}`);
-                return;
-            }
-
-            let mainChord = chordName;
-            if (chordName.includes("/")) {
-                [mainChord] = chordName.split("/");
-                mainChord = mainChord.trim();
-            }
-            const rootMatch = mainChord.match(/^([A-Ga-g][#b]?)/i);
-            let root = rootMatch ? rootMatch[1] : chordName;
-            root = root.charAt(0).toUpperCase() + (root.length > 1 ? root.slice(1).toLowerCase() : '');
-            let type = mainChord.slice(rootMatch ? rootMatch[0].length : 0).toLowerCase();
-
-            let numeralName = chordName;
-            if (romanNumeralMode) {
-                const roman = getRomanNumeralName(root, type, key);
-                numeralName = (roman === "?") ? chordName : roman;
-            }
-
-            chords.push({
-                name: numeralName,
-                notes: noteValues
-            });
-        }
-
-        // Generate UUID (simplified version)
-        function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
-
-        let finalName;
-        if (key === "_") {
-            finalName = setName;
-        } else {
-            finalName = setName ? (key + "_" + setName) : key;
-        }
-        // Create the JSON object
-        const jsonData = {
-            chords: chords,
-            name: finalName,
-            typeId: "native-instruments-chord-set",
-            uuid: generateUUID(),
-            version: "1.0.0"
-        };
+    if (!ok) {
+      alert("Generated JSON, but failed to save to the current slot. Check the slot status/error.");
+      return;
+    }
+  }
+}
 
 
-        // Display the JSON
-        jsonOutput.textContent = JSON.stringify(jsonData, null, 2);
-        outputSection.classList.remove('hidden');
-        document.getElementById('annotateExportBtn').style.display = "none";
+function buildJsonDataFromUI() {
+  const setName = document.getElementById('setName').value.trim();
+  if (!setName) {
+    return { error: "Set name is required" };
+  }
+
+  const chordInputs = chordContainer.querySelectorAll('input');
+  const chordNames = Array.from(chordInputs)
+    .map(input => input.value.trim())
+    .filter(Boolean);
+
+  if (chordNames.length === 0) {
+    return { error: "At least one chord is required" };
+  }
+
+  const romanNumeralMode = document.getElementById('romanNumeralMode').checked;
+  const key = document.getElementById('keySelector').value;
+
+  const chords = [];
+
+  for (const chordName of chordNames) {
+    const noteValues = parseChord(chordName);
+    if (!noteValues) {
+      return { error: `Invalid chord: ${chordName}` };
     }
 
+    let mainChord = chordName.includes("/") ? chordName.split("/")[0].trim() : chordName;
+    const rootMatch = mainChord.match(/^([A-Ga-g][#b]?)/i);
+    let root = rootMatch ? rootMatch[1] : chordName;
+    root = root.charAt(0).toUpperCase() + root.slice(1).toLowerCase();
+    let type = mainChord.slice(rootMatch ? rootMatch[0].length : 0).toLowerCase();
+
+    let displayName = chordName;
+    if (romanNumeralMode) {
+      const roman = getRomanNumeralName(root, type, key);
+      displayName = roman === "?" ? chordName : roman;
+    }
+
+    chords.push({
+      name: displayName,
+      notes: noteValues
+    });
+  }
+
+  const finalName = key === "_" ? setName : `${key}_${setName}`;
+
+  const jsonData = {
+    chords,
+    name: finalName,
+    typeId: "native-instruments-chord-set",
+    uuid: crypto.randomUUID(),
+    version: "1.0.0"
+  };
+
+  return {
+    jsonData,
+    jsonString: JSON.stringify(jsonData, null, 2),
+    meta: {
+      setName: finalName,
+      key,
+      romanNumeralMode,
+      chordCount: chords.length
+    }
+  };
+}
 
 
     // Function to copy JSON to clipboard
@@ -773,6 +1155,56 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error('Failed to copy: ', err);
             });
     }
+
+async function downloadBundleZip() {
+  // strict 16/16 enforcement
+  const check = validateFullBundle();
+  if (!check.valid) {
+    alert(`Bundle incomplete. Missing slots: ${check.missingSlots.join(", ")}`);
+    return;
+  }
+
+  if (typeof JSZip === "undefined") {
+    alert("JSZip not found. Make sure JSZip is loaded before your main script.");
+    return;
+  }
+
+  const zip = new JSZip();
+
+  // optional: put files inside a folder in the zip
+  const folderName = (bundleState.bundleName || "user_chord_sets")
+    .trim()
+    .replace(/[^\w\-]+/g, "_");
+  const folder = zip.folder(folderName);
+
+  // add each slot as a file
+  for (const slot of bundleState.slots) {
+    // safety guard (should already be saved due to strict check)
+    if (slot.status !== "saved" || !slot.jsonString) continue;
+
+    // deterministic naming
+    const fileName =
+      slot.fileName ||
+      `${bundleState.filePrefix}${String(slot.index + 1).padStart(2, "0")}.json`;
+
+    folder.file(fileName, slot.jsonString);
+  }
+
+  const blob = await zip.generateAsync({ type: "blob" });
+
+  const zipName = `${folderName}.zip`;
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = zipName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  URL.revokeObjectURL(url);
+}
+
 
     // Function to download JSON as file
     async function downloadJSON() {
