@@ -407,6 +407,28 @@ updateSlotIndicator();
     copyBtn.addEventListener('click', copyToClipboard);
     downloadBtn.addEventListener('click', downloadJSON);
 
+    function updateRomanToggleState() {
+  const keySelector = document.getElementById("keySelector");
+  if (keySelector) {
+  keySelector.addEventListener("change", updateRomanToggleState);
+}
+  const romanToggle = document.getElementById("romanNumeralMode");
+
+  if (!keySelector || !romanToggle) return;
+
+  const hasKey = keySelector.value && keySelector.value !== "_";
+
+  romanToggle.disabled = !hasKey;
+
+  if (!hasKey) {
+    romanToggle.checked = false; // prevent stale state
+    romanToggle.classList.add("opacity-50", "cursor-not-allowed");
+  } else {
+    romanToggle.classList.remove("opacity-50", "cursor-not-allowed");
+  }
+}
+
+
     document.addEventListener('keydown', function (e) {
         // If Shift + Z is pressed
         if (e.shiftKey && (e.key === 'Z' || e.key === 'z')) {
@@ -416,11 +438,14 @@ updateSlotIndicator();
             if (romanNumeralDiv) romanNumeralDiv.style.display = "block";
             const keySelectorDiv = document.getElementById('keySelectorDiv');
             if (keySelectorDiv) keySelectorDiv.style.display = "block";
+
+            updateRomanToggleState();
+
+
             const bundleSection = document.getElementById("bundleSection");
             if (bundleSection) bundleSection.classList.remove("hidden");
             setFileNumberBundleMode(true);
             updateSlotIndicator();
-
 
             // Make JSON output editable on Shift+Z
             const jsonOutput = document.getElementById('jsonOutput');
