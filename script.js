@@ -182,10 +182,22 @@ function loadBundleState() {
       slot.displayName = ss.displayName ?? slot.displayName;
       slot.fileName = ss.fileName ?? slot.fileName;
       slot.jsonString = ss.jsonString ?? "";
-      slot.data = slot.jsonString ? JSON.parse(slot.jsonString) : null;
-      slot.uuid = ss.uuid ?? (slot.data?.uuid || "");
       slot.status = ss.status || (slot.jsonString ? "saved" : "empty");
       slot.error = ss.error || "";
+      slot.data = null;
+if (slot.jsonString) {
+  try {
+    slot.data = JSON.parse(slot.jsonString);
+  } catch (e) {
+    slot.status = "error";
+    slot.error = "Saved slot data was corrupted (could not parse).";
+    slot.jsonString = "";
+    slot.uuid = "";        
+    slot.savedAt = null;   
+  }
+}
+
+      slot.uuid = ss.uuid ?? (slot.data?.uuid || "");
       slot.key = ss.key ?? "_";
       slot.romanNumeralMode = !!ss.romanNumeralMode;
       slot.chordCount = Number(ss.chordCount || 0);
@@ -319,6 +331,13 @@ function updateSlotIndicator() {
   const fileNumberInput = document.getElementById("fileNumber");
   if (fileNumberInput) fileNumberInput.value = String(slot.index + 1);
 
+  const hint = document.getElementById("bundleModeHint");
+if (hint) {
+  if (isBundleModeEnabled()) hint.classList.remove("hidden");
+  else hint.classList.add("hidden");
+}
+
+
   renderSlotGrid();
   updateZipButtonState();
   persistBundleState();
@@ -328,8 +347,7 @@ function updateSlotIndicator() {
 // Bundle UI wiring
 const bundlePrevBtn = document.getElementById("bundlePrevBtn");
 const bundleNextBtn = document.getElementById("bundleNextBtn");
-const bundleSaveBtn = document.getElementById("bundleSaveBtn");
-const bundleSaveNextBtn = document.getElementById("bundleSaveNextBtn");
+
 const bundleClearSlotBtn = document.getElementById("bundleClearSlotBtn");
 const bundleClearBundleBtn = document.getElementById("bundleClearBundleBtn");
 const bundleNameInput = document.getElementById("bundleNameInput");
@@ -337,15 +355,7 @@ const bundleNameInput = document.getElementById("bundleNameInput");
 if (bundlePrevBtn) bundlePrevBtn.addEventListener("click", prevSlot);
 if (bundleNextBtn) bundleNextBtn.addEventListener("click", nextSlot);
 
-if (bundleSaveBtn) bundleSaveBtn.addEventListener("click", () => {
-  const ok = saveCurrentSlot();
-  if (ok) updateSlotIndicator();
-});
 
-if (bundleSaveNextBtn) bundleSaveNextBtn.addEventListener("click", () => {
-  saveAndAdvance();
-  updateSlotIndicator();
-});
 
 if (bundleClearSlotBtn) bundleClearSlotBtn.addEventListener("click", () => {
   const slot = bundleState.slots[bundleState.currentSlotIndex];
@@ -372,23 +382,24 @@ if (bundleNameInput) {
 }
 
 
+
+
+// Initialize chord inputs
+const chordContainer = document.querySelector('.chord-input-container');
+const addChordBtn = document.getElementById('addChordBtn');
+const generateBtn = document.getElementById('generateBtn');
+const outputSection = document.getElementById('outputSection');
+const jsonOutput = document.getElementById('jsonOutput');
+const copyBtn = document.getElementById('copyBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const copyNotification = document.getElementById('copyNotification');
+
+// Add initial chord inputs
+for (let i = 0; i < 12; i++) {
+  addChordInput();
+}
+
 updateSlotIndicator();
-
-
-    // Initialize chord inputs
-    const chordContainer = document.querySelector('.chord-input-container');
-    const addChordBtn = document.getElementById('addChordBtn');
-    const generateBtn = document.getElementById('generateBtn');
-    const outputSection = document.getElementById('outputSection');
-    const jsonOutput = document.getElementById('jsonOutput');
-    const copyBtn = document.getElementById('copyBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const copyNotification = document.getElementById('copyNotification');
-
-    // Add initial chord inputs
-    for (let i = 0; i < 12; i++) {
-        addChordInput();
-    }
 
     // Event listeners
     addChordBtn.addEventListener('click', addChordInput);
@@ -1184,7 +1195,6 @@ async function downloadBundleZip() {
 
     // deterministic naming
     const fileName =
-      slot.fileName ||
       `${bundleState.filePrefix}${String(slot.index + 1).padStart(2, "0")}.json`;
 
     folder.file(fileName, slot.jsonString);

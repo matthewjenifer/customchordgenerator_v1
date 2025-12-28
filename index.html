@@ -211,6 +211,11 @@
                 <!-- Inside your #outputSection, remove the wrapping flex div and do this: -->
                 <div id="installPathInstructions" class="mb-4">
                     <h2 class="text-xl font-semibold text-purple-400 mb-2">Installation Path</h2>
+                    <p class="text-gray-400 mt-2 text-sm">
+                        Place the generated JSON file in this location to use it with Maschine. Maschine will need to
+                        restart to load your new chord set.
+                    </p>
+                    <br>
                     <div class="overflow-x-auto">
                         <table class="min-w-full border border-gray-600 rounded-lg text-gray-200 bg-gray-900">
                             <thead>
@@ -239,10 +244,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <p class="text-gray-400 mt-2 text-sm">
-                        Place the generated JSON file in this location to use it with Maschine. Maschine will need to
-                        restart to load your new chord set.
-                    </p>
+                    
                 </div>
 
                 <!-- Bundle Controls -->
@@ -258,6 +260,7 @@
           <span class="text-gray-400">Current Set:</span>
           <span id="currentSlotLabel" class="font-semibold text-purple-300">01/16</span>
         </div>
+        <span id="bundleModeHint" class="text-xs text-green-400 hidden">Bundle mode active</span>
 
         <span id="currentSlotStatus"
           class="text-xs px-2 py-1 rounded-md bg-gray-700 text-gray-200 border border-gray-600">
@@ -277,16 +280,6 @@
         <button id="bundleNextBtn"
           class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition">
           Next<i class="fas fa-chevron-right ml-2"></i>
-        </button>
-
-        <button id="bundleSaveBtn"
-          class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
-          <i class="fas fa-save mr-2"></i>Save to Slot
-        </button>
-
-        <button id="bundleSaveNextBtn"
-          class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
-          Save + Next
         </button>
 
         <button id="bundleClearSlotBtn"
