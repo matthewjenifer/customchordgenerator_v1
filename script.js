@@ -78,6 +78,31 @@ function prevSlot() {
   }
 }
 
+function goToNextAvailableSlot() {
+  const start = bundleState.currentSlotIndex;
+
+  // First pass: next slot forward that isn't saved
+  for (let i = start + 1; i < BUNDLE_SLOT_COUNT; i++) {
+    if (bundleState.slots[i].status !== "saved") {
+      goToSlot(i);
+      return;
+    }
+  }
+
+  // Second pass: wrap around
+  for (let i = 0; i < start; i++) {
+    if (bundleState.slots[i].status !== "saved") {
+      goToSlot(i);
+      return;
+    }
+  }
+
+  // If all saved, just move forward if possible
+  if (start < BUNDLE_SLOT_COUNT - 1) {
+    goToSlot(start + 1);
+  }
+}
+
 
 function saveCurrentSetToSlot(slotIndex) {
   const result = buildJsonDataFromUI();
@@ -446,6 +471,8 @@ updateSlotIndicator();
             if (bundleSection) bundleSection.classList.remove("hidden");
             setFileNumberBundleMode(true);
             updateSlotIndicator();
+            updateGenerateButtonLabel();
+
 
             // Make JSON output editable on Shift+Z
             const jsonOutput = document.getElementById('jsonOutput');
@@ -1081,6 +1108,17 @@ function isBundleModeEnabled() {
   return !!(sectionVisible || fileLocked);
 }
 
+function updateGenerateButtonLabel() {
+  const btn = document.getElementById("generateBtn");
+  if (!btn) return;
+
+  if (isBundleModeEnabled()) {
+    btn.innerHTML = "&lt;/&gt; Generate JSON / Save to Slot";
+  } else {
+    btn.textContent = "Generate JSON";
+  }
+}
+
 
    // Function to generate JSON output (now also auto-saves in bundle mode)
 function generateJSON() {
@@ -1103,10 +1141,10 @@ function generateJSON() {
     // saveCurrentSlot will mark slot.error/slot.status if anything goes wrong
     updateSlotIndicator();
 
-    if (!ok) {
-      alert("Generated JSON, but failed to save to the current slot. Check the slot status/error.");
-      return;
-    }
+    if (!ok) return;
+
+    goToNextAvailableSlot();
+
   }
 }
 
