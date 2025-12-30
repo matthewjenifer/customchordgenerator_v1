@@ -299,7 +299,7 @@ function updateZipButtonState() {
 
   const check = validateFullBundle();
   btn.disabled = !check.valid;
-  btn.title = check.valid ? "Download bundle zip" : `Missing slots: ${check.missingSlots.join(", ")}`;
+  btn.title = check.valid ? "Download bundle zip" : "🔒";
 }
 
 // ---------- fileNumber locking / syncing ----------
