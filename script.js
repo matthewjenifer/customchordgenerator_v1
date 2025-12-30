@@ -110,7 +110,6 @@ function saveCurrentSetToSlot(slotIndex) {
   const slot = bundleState.slots[slotIndex];
   bundleState.updatedAt = Date.now();
 
-// ✅ NEW: block duplicate set names across saved slots (bundle mode)
   if (!result.error && isBundleModeEnabled()) {
     const nameToCheck = result.meta?.setName || result.jsonData?.name || "";
 
@@ -340,12 +339,6 @@ function clearBundle() {
 function syncJsonPanelToCurrentSlot() {
   const slot = bundleState.slots[bundleState.currentSlotIndex];
 
-  // These already exist in your file as globals:
-  // const outputSection = document.getElementById('outputSection');
-  // const jsonOutput = document.getElementById('jsonOutput');
-  // :contentReference[oaicite:3]{index=3}
-
-  // If you're in bundle mode, keep the panel usable while navigating
   if (isBundleModeEnabled()) {
     outputSection.classList.remove("hidden"); // outputSection is hidden by default :contentReference[oaicite:4]{index=4}
 
@@ -359,7 +352,6 @@ function syncJsonPanelToCurrentSlot() {
   }
 }
 
-// ---------- IMPORTANT: replace your current updateSlotIndicator with this upgraded one ----------
 function updateSlotIndicator() {
   const slot = bundleState.slots[bundleState.currentSlotIndex];
   const slotNum = String(slot.index + 1).padStart(2, "0");
@@ -639,7 +631,7 @@ function clearChordInputs() {
 
     }
 
-    // MIDI note to Maschine value mapping (value = MIDI_note - 60, where C3 = 60 in Maschine)
+    // MIDI note to Maschine value mapping (value = MIDI_note - 60, where C3 = 60 in Maschine!!!)
     const midiToValue = (midiNote) => midiNote - 60;
 
     // Chord type to note intervals mapping
@@ -915,82 +907,123 @@ function clearChordInputs() {
         "VII"
     ]; // If you want minor key support later
 
-    function getRomanNumeralName(chordRoot, chordType, key) {
-        // Get root number for both chord and key
-        const rootMap = {
-            'C': 0,
-            'C#': 1,
-            'Db': 1,
-            'D': 2,
-            'D#': 3,
-            'Eb': 3,
-            'E': 4,
-            'F': 5,
-            'F#': 6,
-            'Gb': 6,
-            'G': 7,
-            'G#': 8,
-            'Ab': 8,
-            'A': 9,
-            'A#': 10,
-            'Bb': 10,
-            'B': 11
-        };
+  function getRomanNumeralName(chordRoot, chordType, key) {
+  const rootMap = {
+    C: 0,  "C#": 1, Db: 1,
+    D: 2,  "D#": 3, Eb: 3,
+    E: 4,
+    F: 5,  "F#": 6, Gb: 6,
+    G: 7,  "G#": 8, Ab: 8,
+    A: 9,  "A#": 10, Bb: 10,
+    B: 11
+  };
 
-        // Get semitone distance from key root to chord root, always positive (mod 12)
-        let keyNum = rootMap[key];
-        let chordNum = rootMap[chordRoot];
-        if (keyNum === undefined || chordNum === undefined) return chordRoot;
+  const keyNum = rootMap[key];
+  const chordNum = rootMap[chordRoot];
+  if (keyNum === undefined || chordNum === undefined) return chordRoot;
 
-        let interval = (chordNum - keyNum + 12) % 12;
+  // Normalize chordType and optionally apply your alias map if present
+  let ct = (chordType || "").trim();
+  const ctLower = ct.toLowerCase();
 
-        // Roman numerals for C major: [C,D,E,F,G,A,B] → [I,ii,iii,IV,V,vi,vii°]
-        let numeral;
-        switch (interval) {
-            case 0:
-                numeral = "I";
-                break;
-            case 2:
-                numeral = "ii";
-                break;
-            case 4:
-                numeral = "iii";
-                break;
-            case 5:
-                numeral = "IV";
-                break;
-            case 7:
-                numeral = "V";
-                break;
-            case 9:
-                numeral = "vi";
-                break;
-            case 11:
-                numeral = "vii°";
-                break;
-                // For accidentals (e.g., C# in C): use # or b + numeral, e.g. "#IV"
-            default:
-                // Could try to label as '#IV', 'bIII', etc., but for now:
-                numeral = "?";
-        }
+  if (typeof chordAliases !== "undefined" && chordAliases[ctLower]) {
+    ct = chordAliases[ctLower];
+  }
+  ct = (ct || "").toLowerCase();
 
-        // Basic type logic
-        if (/m(?!a)/i.test(chordType)) { // matches "m" but not "maj"
-            if (numeral === "I") numeral = "i";
-            else if (numeral === "IV") numeral = "iv";
-            else if (numeral === "V") numeral = "v";
-            else if (numeral === "vi") numeral =
-                "VI"; // minor vi is VI in minor key, but let’s keep it simple
-        }
-        if (/dim|°/i.test(chordType)) numeral += "°";
-        if (/aug|\+/i.test(chordType)) numeral += "+";
+  const interval = (chordNum - keyNum + 12) % 12;
 
-        // Add extensions (e.g., "7", "9", "13") to the numeral if present in chordType
-        let extension = chordType.match(/7|9|11|13/);
-        if (extension) numeral += extension[0];
+  // Chromatic degrees in a MAJOR-key reference frame.
+  // For the tritone (6), we decide later: #IV or bV based on chordRoot spelling.
+  const chromaticDegreeMap = {
+    0:  { acc: "",  base: "I"   },
+    1:  { acc: "b", base: "II"  }, // b2
+    2:  { acc: "",  base: "II"  }, // 2
+    3:  { acc: "b", base: "III" }, // b3
+    4:  { acc: "",  base: "III" }, // 3
+    5:  { acc: "",  base: "IV"  }, // 4
+    6:  { acc: "",  base: "TRITONE" }, // decide: #IV or bV
+    7:  { acc: "",  base: "V"   }, // 5
+    8:  { acc: "b", base: "VI"  }, // b6
+    9:  { acc: "",  base: "VI"  }, // 6
+    10: { acc: "b", base: "VII" }, // b7
+    11: { acc: "",  base: "VII" }  // 7
+  };
 
-        return numeral;
+  const deg = chromaticDegreeMap[interval];
+  if (!deg) return chordRoot;
+
+  // Decide tritone spelling (#IV vs bV) based on chordRoot spelling.
+  // F# -> #IV, Gb -> bV, default -> #IV.
+  let acc = deg.acc;
+  let base = deg.base;
+
+  if (base === "TRITONE") {
+    const hasSharp = /#/.test(chordRoot);
+    const hasFlat = /b/.test(chordRoot);
+
+    if (hasFlat && !hasSharp) {
+      acc = "b";
+      base = "V";
+    } else {
+      acc = "#";
+      base = "IV";
     }
+  }
+
+  // ---------- Quality detection (ordered + strict) ----------
+  const isHalfDim =
+    /ø/.test(ct) ||
+    /\bm7b5\b/.test(ct) ||
+    /\bmin7b5\b/.test(ct) ||
+    /\bhalf[-\s]?dim\b/.test(ct) ||
+    /\bhalfdiminished\b/.test(ct) ||
+    /\bhd\b/.test(ct);
+
+  const isDim =
+    !isHalfDim && (
+      /°/.test(ct) ||
+      /\bdim\b/.test(ct) ||
+      /\bdiminished\b/.test(ct) ||
+      /\bdim7\b/.test(ct) ||
+      /\bo7\b/.test(ct)
+    );
+
+  const isAug =
+    /\baug\b/.test(ct) ||
+    /\baugmented\b/.test(ct) ||
+    /\+/.test(ct);
+
+  // Minor = starts with m/min/mi, NOT maj, and not dim/aug/half-dim
+  const isMinor =
+    !isHalfDim &&
+    !isDim &&
+    !isAug &&
+    /^(m|min|mi)(?!aj)/.test(ct);
+
+  // ---------- Build numeral (accidental + numeral + quality + extensions) ----------
+  let numeral = base;
+  if (isMinor) numeral = numeral.toLowerCase();
+
+  // Single quality marker
+  let qualityMark = "";
+  if (isHalfDim) qualityMark = "ø";
+  else if (isDim) qualityMark = "°";
+  else if (isAug) qualityMark = "+";
+
+  // Extensions: prefer longest first so 13 doesn't get mistaken for 7
+  const extMatch = ct.match(/(13|11|9|7)/);
+  let extStr = extMatch ? extMatch[1] : "";
+
+  // If user typed m7b5 but your normalization didn't include "7", force ø7
+  if (!extStr && isHalfDim && (/\bm7b5\b/.test(ct) || /\bmin7b5\b/.test(ct))) {
+    extStr = "7";
+  }
+
+  return `${acc}${numeral}${qualityMark}${extStr}`;
+}
+
+
 
     // let theoryInfo = detectChordOriginAuto(chordName, key);
 
