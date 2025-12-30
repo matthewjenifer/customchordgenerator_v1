@@ -312,6 +312,28 @@ function clearBundle() {
   updateSlotIndicator();
 }
 
+function syncJsonPanelToCurrentSlot() {
+  const slot = bundleState.slots[bundleState.currentSlotIndex];
+
+  // These already exist in your file as globals:
+  // const outputSection = document.getElementById('outputSection');
+  // const jsonOutput = document.getElementById('jsonOutput');
+  // :contentReference[oaicite:3]{index=3}
+
+  // If you're in bundle mode, keep the panel usable while navigating
+  if (isBundleModeEnabled()) {
+    outputSection.classList.remove("hidden"); // outputSection is hidden by default :contentReference[oaicite:4]{index=4}
+
+    if (slot.status === "saved" && slot.jsonString) {
+      jsonOutput.textContent = slot.jsonString; // jsonOutput is your <pre id="jsonOutput"> :contentReference[oaicite:5]{index=5}
+    } else if (slot.status === "error") {
+      jsonOutput.textContent = `// Slot ${String(slot.index + 1).padStart(2, "0")} error:\n// ${slot.error || "Unknown error"}`;
+    } else {
+      jsonOutput.textContent = `// Slot ${String(slot.index + 1).padStart(2, "0")} is empty.\n// Generate JSON to save into this slot.`;
+    }
+  }
+}
+
 // ---------- IMPORTANT: replace your current updateSlotIndicator with this upgraded one ----------
 function updateSlotIndicator() {
   const slot = bundleState.slots[bundleState.currentSlotIndex];
@@ -362,6 +384,7 @@ if (hint) {
   else hint.classList.add("hidden");
 }
 
+  syncJsonPanelToCurrentSlot();
 
   renderSlotGrid();
   updateZipButtonState();
@@ -483,7 +506,7 @@ updateSlotIndicator();
 
 
     // Annotated export (private feature)
-    
+
     // const annotateExportBtn = document.getElementById('annotateExportBtn');
     // if (annotateExportBtn) {
     //     annotateExportBtn.addEventListener('click', function () {
@@ -1182,20 +1205,27 @@ function generateJSON() {
   // Display the JSON (single source of truth)
   jsonOutput.textContent = result.jsonString;
   outputSection.classList.remove('hidden');
-  document.getElementById('annotateExportBtn').style.display = "none";
+  const annotateBtn = document.getElementById('annotateExportBtn');
+if (annotateBtn) annotateBtn.style.display = "none";
+
 
   // Auto-save into the current bundle slot if bundle mode is enabled
   if (isBundleModeEnabled()) {
-    const ok = saveCurrentSlot();
+  const ok = saveCurrentSlot();
 
-    // saveCurrentSlot will mark slot.error/slot.status if anything goes wrong
-    updateSlotIndicator();
+  // update UI + slot grid
+  updateSlotIndicator();
 
-    if (!ok) return;
+  if (!ok) return;
 
-    goToNextAvailableSlot();
+  // advance to next slot...
+  goToNextAvailableSlot();
 
-  }
+  // ...but KEEP showing the JSON we just generated (otherwise the panel flips to "empty slot")
+  jsonOutput.textContent = result.jsonString;
+  outputSection.classList.remove("hidden");
+}
+
 }
 
 
