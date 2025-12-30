@@ -611,6 +611,7 @@ updateSlotIndicator();
         // 9th, 11th, 13th
         '9': [0, 4, 7, 10, 14],
         'maj9': [0, 4, 7, 11, 14],
+        'madd9': [0, 4, 7, 11, 14],
         'm9': [0, 3, 7, 10, 14],
         'min9': [0, 3, 7, 10, 14],
         '11': [0, 4, 7, 10, 14, 17],
@@ -632,7 +633,6 @@ updateSlotIndicator();
 
         // Altered and hybrid chords
         '#5': [0, 4, 8],
-        'm#5': [0, 3, 8],
         'b5': [0, 4, 6],
         'm6/9': [0, 3, 7, 9, 14],
         'maj6/9': [0, 4, 7, 9, 14],
@@ -653,6 +653,10 @@ updateSlotIndicator();
         '7add11': [0, 4, 7, 10, 17], // A7add11 (your preferred "11 behavior" basically)
         '7#11': [0, 4, 7, 10, 18],   // B7#11
         '7alt': [0, 4, 6, 10, 15, 20], // C7alt (common altered set: b5, #9, b13)
+
+        '6add9': [0, 4, 7, 9, 14],
+        'm6add9': [0, 3, 7, 9, 14],
+        'maj6add9': [0, 4, 7, 9, 14],
 
 
     };
@@ -993,7 +997,7 @@ updateSlotIndicator();
     // Main detector: call with (chordName, keyRoot) -- always assumes "major"
     function detectChordOriginAuto(chordName, keyRoot) {
         // Parse chord root and basic type
-        let mainChord = chordName.split("/")[0].trim();
+        let mainChord = splitSlashBassSmart(chordName).main;
         const match = mainChord.match(/^([A-G][b#]?)(m|dim|maj|min)?/i);
         if (!match) return "Unrecognized chord";
         let root = match[1];
@@ -1026,10 +1030,48 @@ updateSlotIndicator();
         return "Non-diatonic (no common modal origin)";
     }
 
+function isNoteToken(token) {
+  return /^[A-G](?:b|#)?$/i.test(token.trim());
+}
+
+function isSlashExtensionToken(token) {
+  return /^(?:b|#)?(?:9|11|13)$/.test(token.trim());
+}
+
+function normalizeSlashExtensions(chordName) {
+  chordName = chordName.trim();
+
+  const parts = chordName.split("/").map(s => s.trim());
+  if (parts.length === 1) return chordName;
+
+  let base = parts[0];
+  const tail = parts.slice(1);
+
+  // If first slash token is a note, it's a real slash chord
+  if (tail.length && isNoteToken(tail[0])) {
+    return chordName;
+  }
+
+  for (const t of tail) {
+    if (isSlashExtensionToken(t)) {
+      base += `add${t}`;
+    } else {
+      // unknown slash usage, do nothing
+      return chordName;
+    }
+  }
+
+  return base;
+}
+
 
 
     // Function to parse chord name and return note values
     function parseChord(chordName) {
+
+       // 🔧 normalize compound slash-extensions FIRST
+  chordName = normalizeSlashExtensions(chordName);
+
   // 1) Exact-match override
   if (explicitVoicing[chordName]) return explicitVoicing[chordName];
 
@@ -1052,6 +1094,13 @@ updateSlotIndicator();
 
   let type = mainChord.slice(rootMatch[0].length).toLowerCase();
   type = chordAliases[type] || type;
+
+    // normalize "6add9" -> "6/9" so it hits chordMap
+  type = type
+    .replace(/^6add9$/, "6/9")
+    .replace(/^m6add9$/, "m6/9")
+    .replace(/^maj6add9$/, "maj6/9");
+
 
   const intervals = getChordIntervals(type);
 
