@@ -483,45 +483,46 @@ updateSlotIndicator();
 
 
     // Annotated export (private feature)
-    const annotateExportBtn = document.getElementById('annotateExportBtn');
-    if (annotateExportBtn) {
-        annotateExportBtn.addEventListener('click', function () {
-            const setName = document.getElementById('setName').value.trim() || 'Chord Set';
-            const key = document.getElementById('keySelector').value;
-            // Pull from the chordContainer you initialized at the top
-            const chordInputs = chordContainer.querySelectorAll('input');
+    
+    // const annotateExportBtn = document.getElementById('annotateExportBtn');
+    // if (annotateExportBtn) {
+    //     annotateExportBtn.addEventListener('click', function () {
+    //         const setName = document.getElementById('setName').value.trim() || 'Chord Set';
+    //         const key = document.getElementById('keySelector').value;
+    //         // Pull from the chordContainer you initialized at the top
+    //         const chordInputs = chordContainer.querySelectorAll('input');
 
-            // Build chordNames just like in generateJSON
-            const chordNames = Array.from(chordInputs).map(input => input.value.trim()).filter(
-                name => name);
+    //         // Build chordNames just like in generateJSON
+    //         const chordNames = Array.from(chordInputs).map(input => input.value.trim()).filter(
+    //             name => name);
 
-            if (chordNames.length === 0) {
-                alert('No chords to annotate.');
-                return;
-            }
+    //         if (chordNames.length === 0) {
+    //             alert('No chords to annotate.');
+    //             return;
+    //         }
 
-            let output = `Chord Set: ${setName}\nKey: ${key} Major\n\n`;
-            output += "Pad\tChord\tAnalysis\n";
-            output += "----------------------------------------\n";
-            chordNames.forEach((chord, i) => {
-                let theory = detectChordOriginAuto(chord, key);
-                output += `${i + 1}\t${chord}\t${theory}\n`;
-            });
+    //         let output = `Chord Set: ${setName}\nKey: ${key} Major\n\n`;
+    //         output += "Pad\tChord\tAnalysis\n";
+    //         output += "----------------------------------------\n";
+    //         chordNames.forEach((chord, i) => {
+    //             let theory = detectChordOriginAuto(chord, key);
+    //             output += `${i + 1}\t${chord}\t${theory}\n`;
+    //         });
 
-            // Download as text file
-            const blob = new Blob([output], {
-                type: 'text/plain'
-            });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `annotated_${setName.replace(/\s+/g, "_")}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
-    }
+    //         // Download as text file
+    //         const blob = new Blob([output], {
+    //             type: 'text/plain'
+    //         });
+    //         const url = URL.createObjectURL(blob);
+    //         const a = document.createElement('a');
+    //         a.href = url;
+    //         a.download = `annotated_${setName.replace(/\s+/g, "_")}.txt`;
+    //         document.body.appendChild(a);
+    //         a.click();
+    //         document.body.removeChild(a);
+    //         URL.revokeObjectURL(url);
+    //     });
+    // }
 
 
 
