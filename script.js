@@ -420,7 +420,7 @@ if (hint) {
 // Bundle UI wiring
 const bundlePrevBtn = document.getElementById("bundlePrevBtn");
 const bundleNextBtn = document.getElementById("bundleNextBtn");
-
+const bundleClearChordsBtn = document.getElementById("bundleClearChordsBtn");
 const bundleClearSlotBtn = document.getElementById("bundleClearSlotBtn");
 const bundleClearBundleBtn = document.getElementById("bundleClearBundleBtn");
 const bundleNameInput = document.getElementById("bundleNameInput");
@@ -445,6 +445,11 @@ if (bundleClearSlotBtn) bundleClearSlotBtn.addEventListener("click", () => {
 });
 
 if (bundleClearBundleBtn) bundleClearBundleBtn.addEventListener("click", clearBundle);
+
+if (bundleClearChordsBtn) bundleClearChordsBtn.addEventListener("click", () => {
+  clearChordInputs();
+});
+
 
 if (bundleNameInput) {
   bundleNameInput.addEventListener("input", (e) => {
@@ -572,6 +577,16 @@ updateSlotIndicator();
     //     });
     // }
 
+function clearChordInputs() {
+  const chordContainer = document.querySelector(".chord-input-container");
+  if (!chordContainer) return;
+
+  const inputs = chordContainer.querySelectorAll("input");
+  inputs.forEach((input) => (input.value = ""));
+
+  // optional: move cursor to pad 1 so it feels instant
+  if (inputs[0]) inputs[0].focus();
+}
 
 
     // Function to add a new chord input field

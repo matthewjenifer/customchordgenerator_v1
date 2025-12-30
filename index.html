@@ -170,15 +170,40 @@
                         </select>
                     </div>
 
-                    <div class="flex flex-col justify-end mt-7" id="romanNumeralDiv" style="display:none">
-                        <div class="flex items-center">
-                            <input type="checkbox" id="romanNumeralMode" class="mr-2">
-                            <label for="romanNumeralMode" class="text-gray-300">Roman Numeral Conversion*</label>
-                        </div>
-                        <span class="text-xs text-gray-500 italic ml-6 mt-1">
-                            *Select Key to Enable. When selected, out-of-key chords will appear as typed.
-                        </span>
-                    </div>
+                   <div
+  class="flex flex-col mt-7 w-full"
+  id="romanNumeralDiv"
+  style="display:none"
+>
+
+  <!-- Row: left content + right button -->
+  <div class="flex items-start w-full">
+    
+    <!-- Left side grows -->
+    <div class="flex flex-col flex-1">
+      <div class="flex items-center">
+        <input type="checkbox" id="romanNumeralMode" class="mr-2">
+        <label for="romanNumeralMode" class="text-gray-300">
+          Roman Numeral Conversion*
+        </label>
+      </div>
+
+      <span class="text-xs text-gray-500 italic ml-6 mt-1">
+        *Select Key to Enable. When selected, out-of-key chords will appear as typed.
+      </span>
+    </div>
+
+    <!-- Right side: button flushed right -->
+    <button
+      id="bundleClearChordsBtn"
+      class="ml-auto px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition whitespace-nowrap"
+    >
+      Clear Chords
+    </button>
+
+  </div>
+</div>
+
 
 
                 </div>
@@ -290,6 +315,7 @@
           class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition">
           Clear Bundle
         </button>
+
       </div>
     </div>
 
@@ -308,7 +334,7 @@
 
                 <div class="flex justify-end mb-4 space-x-2">
                     <!-- Annotated Export Button (Dev use) -->
-                     
+
                     <!-- <button id="annotateExportBtn" style="display:none"
                         class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition">
                         <i class="fas fa-file-alt mr-2"></i>Export Annotated Theory (.txt)
