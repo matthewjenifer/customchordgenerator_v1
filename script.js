@@ -110,6 +110,31 @@ function saveCurrentSetToSlot(slotIndex) {
   const slot = bundleState.slots[slotIndex];
   bundleState.updatedAt = Date.now();
 
+// ✅ NEW: block duplicate set names across saved slots (bundle mode)
+  if (!result.error && isBundleModeEnabled()) {
+    const nameToCheck = result.meta?.setName || result.jsonData?.name || "";
+
+    if (nameToCheck) {
+      const dupeIndex = bundleState.slots.findIndex((s, i) => {
+        if (i === slotIndex) return false;
+        if (s.status !== "saved") return false;
+
+        // Prefer parsed slot.data if present
+        if (s.data?.name) return s.data.name === nameToCheck;
+
+        // Fallback if needed
+        return typeof s.jsonString === "string" && s.jsonString.includes(`"name": "${nameToCheck}"`);
+      });
+
+      if (dupeIndex >= 0) {
+        slot.status = "error";
+        slot.error = `Set name already used in Slot ${dupeIndex + 1}. Choose a unique name before saving.`;
+        console.warn(`Slot ${slotIndex + 1}:`, slot.error);
+        return false;
+      }
+    }
+  }
+
   if (result.error) {
     slot.status = "error";
     slot.error = result.error;
@@ -1213,18 +1238,28 @@ if (annotateBtn) annotateBtn.style.display = "none";
   if (isBundleModeEnabled()) {
   const ok = saveCurrentSlot();
 
-  // update UI + slot grid
   updateSlotIndicator();
 
-  if (!ok) return;
+  if (!ok) {
+    const slot = bundleState.slots[bundleState.currentSlotIndex];
+    if (slot?.error) alert(slot.error);
+    return;
+  }
 
-  // advance to next slot...
   goToNextAvailableSlot();
 
-  // ...but KEEP showing the JSON we just generated (otherwise the panel flips to "empty slot")
+  // keep showing generated JSON (your existing behavior)
   jsonOutput.textContent = result.jsonString;
   outputSection.classList.remove("hidden");
+
+  // ✅ NEW: wipe set name after successful save + advance
+  const setNameInput = document.getElementById("setName");
+  if (setNameInput) {
+    setNameInput.value = "";
+    setNameInput.focus();
+  }
 }
+
 
 }
 
