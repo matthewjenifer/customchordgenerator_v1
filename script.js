@@ -488,13 +488,11 @@ updateChordLabel();
     copyBtn.addEventListener('click', copyToClipboard);
     downloadBtn.addEventListener('click', downloadJSON);
 
-    function updateRomanToggleState() {
-  const keySelector = document.getElementById("keySelector");
-  if (keySelector) {
-  keySelector.addEventListener("change", updateRomanToggleState);
-}
-  const romanToggle = document.getElementById("romanNumeralMode");
+    let romanUserOverride = false;
 
+function updateRomanToggleState() {
+  const keySelector = document.getElementById("keySelector");
+  const romanToggle = document.getElementById("romanNumeralMode");
   if (!keySelector || !romanToggle) return;
 
   const hasKey = keySelector.value && keySelector.value !== "_";
@@ -502,11 +500,34 @@ updateChordLabel();
   romanToggle.disabled = !hasKey;
 
   if (!hasKey) {
-    romanToggle.checked = false; // prevent stale state
+    // Reset everything when no key is selected
+    romanToggle.checked = false;
+    romanUserOverride = false;
     romanToggle.classList.add("opacity-50", "cursor-not-allowed");
-  } else {
-    romanToggle.classList.remove("opacity-50", "cursor-not-allowed");
+    return;
   }
+
+  // Key IS selected: default to checked unless user explicitly unchecked
+  romanToggle.classList.remove("opacity-50", "cursor-not-allowed");
+  if (!romanUserOverride) {
+    romanToggle.checked = true;
+  }
+}
+
+const keySelector = document.getElementById("keySelector");
+const romanToggle = document.getElementById("romanNumeralMode");
+
+if (keySelector) {
+  keySelector.addEventListener("change", () => {
+    romanUserOverride = false;   // new key selection = auto-check again
+    updateRomanToggleState();
+  });
+}
+
+if (romanToggle) {
+  romanToggle.addEventListener("change", () => {
+    romanUserOverride = true;    // user choice wins until key changes again
+  });
 }
 
 
