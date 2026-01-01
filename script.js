@@ -480,6 +480,7 @@ for (let i = 0; i < 12; i++) {
 }
 
 updateSlotIndicator();
+updateChordLabel();
 
     // Event listeners
     addChordBtn.addEventListener('click', addChordInput);
@@ -509,33 +510,47 @@ updateSlotIndicator();
 }
 
 
-    document.addEventListener('keydown', function (e) {
-        // If Shift + Z is pressed
-        if (e.shiftKey && (e.key === 'Z' || e.key === 'z')) {
-            const annotateBtn = document.getElementById('annotateExportBtn');
-            if (annotateBtn) annotateBtn.style.display = "block";
-            const romanNumeralDiv = document.getElementById('romanNumeralDiv');
-            if (romanNumeralDiv) romanNumeralDiv.style.display = "block";
-            const keySelectorDiv = document.getElementById('keySelectorDiv');
-            if (keySelectorDiv) keySelectorDiv.style.display = "block";
+    let bundleShortcutTriggered = false;
 
-            updateRomanToggleState();
+document.addEventListener("keydown", function (e) {
+  const isMac = navigator.platform.toUpperCase().includes("MAC");
 
+  const comboPressed = isMac
+    ? e.metaKey && e.shiftKey && e.altKey && e.key.toLowerCase() === "z"
+    : e.ctrlKey && e.shiftKey && e.altKey && e.key.toLowerCase() === "z";
 
-            const bundleSection = document.getElementById("bundleSection");
-            if (bundleSection) bundleSection.classList.remove("hidden");
-            setFileNumberBundleMode(true);
-            updateSlotIndicator();
-            updateGenerateButtonLabel();
-            updateChordLabel(); 
+  if (!comboPressed) return;
 
+  // prevent repeat firing if keys are held
+  if (bundleShortcutTriggered) return;
+  bundleShortcutTriggered = true;
 
-            // Make JSON output editable on Shift+Z
-            const jsonOutput = document.getElementById('jsonOutput');
-            if (jsonOutput) jsonOutput.setAttribute('contenteditable', 'true');
+  const annotateBtn = document.getElementById("annotateExportBtn");
+  if (annotateBtn) annotateBtn.style.display = "block";
 
-        }
-    });
+  const romanNumeralDiv = document.getElementById("romanNumeralDiv");
+  if (romanNumeralDiv) romanNumeralDiv.style.display = "block";
+
+  const keySelectorDiv = document.getElementById("keySelectorDiv");
+  if (keySelectorDiv) keySelectorDiv.style.display = "block";
+
+  updateRomanToggleState();
+
+  const bundleSection = document.getElementById("bundleSection");
+  if (bundleSection) bundleSection.classList.remove("hidden");
+
+  setFileNumberBundleMode(true);
+  updateSlotIndicator();
+  updateGenerateButtonLabel();
+  updateChordLabel();
+
+  const jsonOutput = document.getElementById("jsonOutput");
+  if (jsonOutput) jsonOutput.setAttribute("contenteditable", "true");
+});
+
+document.addEventListener("keyup", function () {
+  bundleShortcutTriggered = false;
+});
 
 
     // Annotated export (private feature)
