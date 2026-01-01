@@ -104,8 +104,8 @@ function goToNextAvailableSlot() {
 }
 
 
-function saveCurrentSetToSlot(slotIndex) {
-  const result = buildJsonDataFromUI();
+function saveCurrentSetToSlot(slotIndex, prebuiltResult = null) {
+  const result = prebuiltResult || buildJsonDataFromUI();
 
   const slot = bundleState.slots[slotIndex];
   bundleState.updatedAt = Date.now();
@@ -301,6 +301,16 @@ function updateZipButtonState() {
   btn.disabled = !check.valid;
   btn.title = check.valid ? "Download bundle zip" : "🔒";
 }
+
+function updateChordLabel() {
+  const label = document.getElementById("chordNamesLabel");
+  if (!label) return;
+
+  label.textContent = isBundleModeEnabled()
+    ? "Chord Names (192 total)"
+    : "Chord Names (12 total)";
+}
+
 
 // ---------- fileNumber locking / syncing ----------
 function setFileNumberBundleMode(isEnabled) {
@@ -517,6 +527,7 @@ updateSlotIndicator();
             setFileNumberBundleMode(true);
             updateSlotIndicator();
             updateGenerateButtonLabel();
+            updateChordLabel(); 
 
 
             // Make JSON output editable on Shift+Z
@@ -583,53 +594,55 @@ function clearChordInputs() {
 
     // Function to add a new chord input field
     function addChordInput() {
-        const inputCount = chordContainer.querySelectorAll('input').length;
-        if (inputCount >= 12) {
-            alert('Maximum of 12 chords allowed');
-            return;
-        }
+  const inputCount = chordContainer.querySelectorAll("input").length;
 
-        const inputDiv = document.createElement('div');
-        inputDiv.className = 'flex items-center';
-        inputDiv.innerHTML = `
-                    <input type="text" placeholder="Pad ${inputCount + 1}" 
-                        class="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-white">
-                    <button class="ml-2 text-gray-400 hover:text-green-400 play-chord-btn" title="Play Chord">
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="ml-2 text-gray-400 hover:text-red-400 remove-chord-btn">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-        chordContainer.appendChild(inputDiv);
+ if (!isBundleModeEnabled() && inputCount >= 12) {
+    alert("Maximum of 12 chords allowed unless Batch Mode is enabled.");
+    return;
+  }
 
-        // Add event listeners
-        const removeBtn = inputDiv.querySelector('.remove-chord-btn');
-        removeBtn.addEventListener('click', function () {
-            chordContainer.removeChild(inputDiv);
-        });
+  const inputDiv = document.createElement("div");
+  inputDiv.className = "flex items-center";
 
-        const playBtn = inputDiv.querySelector('.play-chord-btn');
-        playBtn.addEventListener('click', function () {
-            startToneIfNeeded();
+  // Use "Chord N" instead of "Pad N" once we go past 12, so it’s not misleading
+  const label = inputCount < 12 ? `Pad ${inputCount + 1}` : `Chord ${inputCount + 1}`;
 
-            const chordName = inputDiv.querySelector('input').value.trim();
-            if (!chordName) return;
+  inputDiv.innerHTML = `
+    <input type="text" placeholder="${label}"
+      class="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-white">
+    <button class="ml-2 text-gray-400 hover:text-green-400 play-chord-btn" title="Play Chord">
+      <i class="fas fa-play"></i>
+    </button>
+    <button class="ml-2 text-gray-400 hover:text-red-400 remove-chord-btn">
+      <i class="fas fa-times"></i>
+    </button>
+  `;
+  chordContainer.appendChild(inputDiv);
 
-            const noteValues = parseChord(chordName);
-            if (!noteValues) return;
+  const removeBtn = inputDiv.querySelector(".remove-chord-btn");
+  removeBtn.addEventListener("click", function () {
+    chordContainer.removeChild(inputDiv);
+  });
 
-            // Convert note values to actual notes (C3 = 48)
-            const notes = noteValues.map(val => {
-                const midiNote = val + 60; // Convert back to MIDI
-                return Tone.Frequency(midiNote, "midi").toNote();
-            });
+  const playBtn = inputDiv.querySelector(".play-chord-btn");
+  playBtn.addEventListener("click", function () {
+    startToneIfNeeded();
 
-            // Play the chord
-            synth.triggerAttackRelease(notes, "2n", undefined, 0.25);
-        });
+    const chordName = inputDiv.querySelector("input").value.trim();
+    if (!chordName) return;
 
-    }
+    const noteValues = parseChord(chordName);
+    if (!noteValues) return;
+
+    const notes = noteValues.map((val) => {
+      const midiNote = val + 60;
+      return Tone.Frequency(midiNote, "midi").toNote();
+    });
+
+    synth.triggerAttackRelease(notes, "2n", undefined, 0.25);
+  });
+}
+
 
     // MIDI note to Maschine value mapping (value = MIDI_note - 60, where C3 = 60 in Maschine!!!)
     const midiToValue = (midiNote) => midiNote - 60;
@@ -1266,41 +1279,98 @@ function updateGenerateButtonLabel() {
 }
 
 
-   // Function to generate JSON output (now also auto-saves in bundle mode)
-function generateJSON() {
-  const result = buildJsonDataFromUI();
+function chunkArray(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
 
-  if (result.error) {
-    alert(result.error);
+function generateJSON() {
+  // collect all chord names from ALL inputs (unlimited)
+  const chordInputs = chordContainer.querySelectorAll("input");
+  const allChordNames = Array.from(chordInputs).map(i => i.value.trim()).filter(Boolean);
+
+  const baseSetNameRaw = document.getElementById("setName").value.trim();
+  if (!baseSetNameRaw) {
+    alert("Set name is required");
     return;
   }
 
-  // Display the JSON (single source of truth)
-  jsonOutput.textContent = result.jsonString;
-  outputSection.classList.remove('hidden');
-  const annotateBtn = document.getElementById('annotateExportBtn');
-if (annotateBtn) annotateBtn.style.display = "none";
+  if (!allChordNames.length) {
+    alert("At least one chord is required");
+    return;
+  }
 
+  const isBundle = isBundleModeEnabled();
 
-  // Auto-save into the current bundle slot if bundle mode is enabled
-  if (isBundleModeEnabled()) {
-  const ok = saveCurrentSlot();
+  // If not in bundle mode, we cannot “spill into the next set”
+  if (!isBundle && allChordNames.length > CHORDS_PER_SET) {
+    alert(`You entered ${allChordNames.length} chords.\nEnable Batch Mode (Shift+Z) to auto-split into multiple sets.`);
+    return;
+  }
 
+  // Non-bundle: normal single-set behavior (unchanged)
+  if (!isBundle) {
+    const result = buildJsonDataFromUI({ overrideChordNames: allChordNames.slice(0, CHORDS_PER_SET) });
+    if (result.error) {
+      alert(result.error);
+      return;
+    }
+    jsonOutput.textContent = result.jsonString;
+    outputSection.classList.remove("hidden");
+    return;
+  }
+
+  // Bundle mode: split into 12s and save into consecutive slots
+  const chunks = chunkArray(allChordNames, CHORDS_PER_SET);
+
+  const startSlot = bundleState.currentSlotIndex;
+  const endSlot = startSlot + chunks.length - 1;
+
+  if (endSlot >= BUNDLE_SLOT_COUNT) {
+    alert(`Not enough slots.\nYou need ${chunks.length} slots starting at Slot ${startSlot + 1}, but only ${BUNDLE_SLOT_COUNT - startSlot} slot(s) remain.`);
+    return;
+  }
+
+  // Don’t overwrite saved slots silently
+  for (let i = 0; i < chunks.length; i++) {
+    const slot = bundleState.slots[startSlot + i];
+    if (slot.status === "saved") {
+      alert(`Slot ${startSlot + i + 1} is already saved.\nPick an empty slot (or clear it) before auto-splitting.`);
+      return;
+    }
+  }
+
+  // build + save each set
+  for (let i = 0; i < chunks.length; i++) {
+    const nameWithSuffix = i === 0 ? baseSetNameRaw : `${baseSetNameRaw}_${i + 1}`;
+
+    const result = buildJsonDataFromUI({
+      overrideSetName: nameWithSuffix,
+      overrideChordNames: chunks[i],
+    });
+
+    if (result.error) {
+      alert(result.error);
+      return;
+    }
+
+    const ok = saveCurrentSetToSlot(startSlot + i, result);
+    if (!ok) {
+      // slot.error is already set by your save logic
+      const slot = bundleState.slots[startSlot + i];
+      alert(slot?.error || `Failed saving slot ${startSlot + i + 1}`);
+      updateSlotIndicator();
+      return;
+    }
+  }
+
+  // show the first generated set in output (or change to last if you prefer)
+  goToSlot(startSlot);
   updateSlotIndicator();
 
-  if (!ok) {
-    const slot = bundleState.slots[bundleState.currentSlotIndex];
-    if (slot?.error) alert(slot.error);
-    return;
-  }
-
-  goToNextAvailableSlot();
-
-  // keep showing generated JSON (your existing behavior)
-  jsonOutput.textContent = result.jsonString;
-  outputSection.classList.remove("hidden");
-
-  // ✅ NEW: wipe set name after successful save + advance
+  // optional: clear set name after success (your existing behavior does this per-save,
+  // but we only want to do it once here)
   const setNameInput = document.getElementById("setName");
   if (setNameInput) {
     setNameInput.value = "";
@@ -1309,34 +1379,36 @@ if (annotateBtn) annotateBtn.style.display = "none";
 }
 
 
-}
 
+const CHORDS_PER_SET = 12;
 
-function buildJsonDataFromUI() {
-  const setName = document.getElementById('setName').value.trim();
-  if (!setName) {
-    return { error: "Set name is required" };
-  }
+function buildJsonDataFromUI(options = {}) {
+  const rawSetName = (options.overrideSetName ??
+    document.getElementById("setName").value).trim();
 
-  const chordInputs = chordContainer.querySelectorAll('input');
-  const chordNames = Array.from(chordInputs)
-    .map(input => input.value.trim())
-    .filter(Boolean);
+  if (!rawSetName) return { error: "Set name is required" };
 
-  if (chordNames.length === 0) {
-    return { error: "At least one chord is required" };
-  }
+  const romanNumeralMode =
+    options.overrideRomanNumeralMode ??
+    document.getElementById("romanNumeralMode").checked;
 
-  const romanNumeralMode = document.getElementById('romanNumeralMode').checked;
-  const key = document.getElementById('keySelector').value;
+  const key =
+    options.overrideKey ??
+    document.getElementById("keySelector").value;
+
+  // chord list source: override OR read all inputs
+  const chordNames = (options.overrideChordNames ?? (() => {
+    const chordInputs = chordContainer.querySelectorAll("input");
+    return Array.from(chordInputs).map(i => i.value.trim()).filter(Boolean);
+  })());
+
+  if (!chordNames.length) return { error: "At least one chord is required" };
 
   const chords = [];
 
   for (const chordName of chordNames) {
     const noteValues = parseChord(chordName);
-    if (!noteValues) {
-      return { error: `Invalid chord: ${chordName}` };
-    }
+    if (!noteValues) return { error: `Invalid chord: ${chordName}` };
 
     let mainChord = chordName.includes("/") ? chordName.split("/")[0].trim() : chordName;
     const rootMatch = mainChord.match(/^([A-Ga-g][#b]?)/i);
@@ -1350,20 +1422,17 @@ function buildJsonDataFromUI() {
       displayName = roman === "?" ? chordName : roman;
     }
 
-    chords.push({
-      name: displayName,
-      notes: noteValues
-    });
+    chords.push({ name: displayName, notes: noteValues });
   }
 
-  const finalName = key === "_" ? setName : `${key}_${setName}`;
+  const finalName = key === "_" ? rawSetName : `${key}_${rawSetName}`;
 
   const jsonData = {
     chords,
     name: finalName,
     typeId: "native-instruments-chord-set",
     uuid: crypto.randomUUID(),
-    version: "1.0.0"
+    version: "1.0.0",
   };
 
   return {
@@ -1373,10 +1442,11 @@ function buildJsonDataFromUI() {
       setName: finalName,
       key,
       romanNumeralMode,
-      chordCount: chords.length
-    }
+      chordCount: chords.length,
+    },
   };
 }
+
 
 
     // Function to copy JSON to clipboard
