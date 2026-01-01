@@ -777,6 +777,22 @@ function clearChordInputs() {
         'm6add9': [0, 3, 7, 9, 14],
         'maj6add9': [0, 4, 7, 9, 14],
 
+        // Power chord
+        '5': [0, 7],
+
+        // Add chords (not sus: keep 3rd)
+        'add2':  [0, 2, 4, 7],
+        'add4':  [0, 4, 5, 7],
+
+        // Minor-major 7 (CmMaj7)
+        'mmaj7': [0, 3, 7, 11],
+        'minmaj7': [0, 3, 7, 11],
+        'mmj7': [0, 3, 7, 11], // optional shorthand
+
+        // Compound (C9add13)
+        '9add13': [0, 4, 7, 10, 14, 21],
+
+
 
     };
 
@@ -863,8 +879,25 @@ function clearChordInputs() {
         'add7': '7',         // Fadd7 -> treat like F7 (triad + b7)
         '7add11': '7add11',  // allow as explicit type
 
+        // Power
+        'power': '5',
 
-        // Chord names can be extended with more cases as you see them in your user data
+        // Support common minor-extension shorthands you’re currently missing
+        'm11': 'min11',
+        'm13': 'min13',
+
+        // Support common minor-major 7 spellings
+        'mmaj7': 'mmaj7',     // keeps it as-is (explicit)
+        'mmaj': 'mmaj7',      // CmMaj -> CmMaj7 (optional)
+        'mmaj9': 'mmaj9',     // optional if you add it later
+        'minmaj7': 'mmaj7',
+        'minormaj7': 'mmaj7',
+
+        // Add2/Add4 shorthands people actually type
+        'add2': 'add2',
+        'add4': 'add4',
+
+        
     };
 
 
@@ -1228,8 +1261,7 @@ function normalizeSlashExtensions(chordName) {
 
     // Function to parse chord name and return note values
     function parseChord(chordName) {
-
-       // 🔧 normalize compound slash-extensions FIRST
+  // Normalize compound slash-extensions FIRST (your existing behavior)
   chordName = normalizeSlashExtensions(chordName);
 
   // 1) Exact-match override
@@ -1238,40 +1270,63 @@ function normalizeSlashExtensions(chordName) {
   let mainChord = chordName;
   let bassNote = null;
 
-  // 2) Slash chords
+  // 2) Slash chords (real bass)
   if (chordName.includes("/")) {
     [mainChord, bassNote] = chordName.split("/");
     mainChord = mainChord.trim();
     bassNote = bassNote.trim();
   }
 
-  // 3) Root + type
+  // 3) Capture and remove omissions like (no3), (no5) before type parsing
+  const omissions = [];
+  const omissionRegex = /\(\s*no\s*(3|5)\s*\)/gi;
+  mainChord = mainChord.replace(omissionRegex, (_, n) => {
+    omissions.push(Number(n));
+    return "";
+  }).trim();
+
+  // 4) Root + type
   const rootMatch = mainChord.match(/^([A-Ga-g][#b]?)/i);
   if (!rootMatch) return null;
 
   let root = rootMatch[1];
   root = root.charAt(0).toUpperCase() + (root.length > 1 ? root.slice(1).toLowerCase() : "");
 
-  let type = mainChord.slice(rootMatch[0].length).toLowerCase();
+  let type = mainChord.slice(rootMatch[0].length).toLowerCase().trim();
+
+  // Normalize a few common “texty” spellings before alias
+  type = type.replace(/^maj7$/, "maj7"); // noop but keeps intent
+  type = type.replace(/^mmaj7$/, "mmaj7");
+
+  // Alias mapping (your existing behavior)
   type = chordAliases[type] || type;
 
-    // normalize "6add9" -> "6/9" so it hits chordMap
+  // normalize "6add9" -> "6/9" so it hits chordMap (your existing behavior)
   type = type
     .replace(/^6add9$/, "6/9")
     .replace(/^m6add9$/, "m6/9")
     .replace(/^maj6add9$/, "maj6/9");
 
+  // 5) Build intervals
+  let intervals = getChordIntervals(type);
 
-  const intervals = getChordIntervals(type);
+  // 6) Apply omissions to intervals (remove 3rd or 5th broadly, works for maj/min/alt)
+  // no3 removes either 3 or 4 if present
+  if (omissions.includes(3)) {
+    intervals = intervals.filter(i => i !== 3 && i !== 4);
+  }
+  // no5 removes diminished/perfect/aug fifth if present
+  if (omissions.includes(5)) {
+    intervals = intervals.filter(i => i !== 6 && i !== 7 && i !== 8);
+  }
 
   const rootSemitone = rootNoteMap[root];
   if (rootSemitone === undefined) return null;
 
   const rootMidi = rootSemitone + 48;
-
   let noteValues = [];
 
-  // 4) Bass handling
+  // 7) Bass handling
   if (bassNote) {
     const bassRootMatch = bassNote.match(/^([A-Ga-g][#b]?)/i);
     if (bassRootMatch) {
@@ -1288,22 +1343,22 @@ function normalizeSlashExtensions(chordName) {
     noteValues.push(midiToValue(rootMidi - 12));
   }
 
-  // 5) Chord tones: root + all intervals
+  // 8) Chord tones: root + all intervals
   noteValues.push(midiToValue(rootMidi)); // root
   for (let i = 1; i < intervals.length; i++) {
     noteValues.push(midiToValue(rootMidi + intervals[i]));
   }
 
-  // 6) Optional octave root (ONLY when safe)
-  // Avoid for altered dominants / tension-heavy stuff (b/# 5,9,11,13 or "alt")
+  // 9) Optional octave root (keep your safety rule)
   if (!/^7.*([b#](5|9|11|13)|alt)/.test(type)) {
     noteValues.push(midiToValue(rootMidi + 12));
   }
 
-  // 7) Clean up
+  // 10) Clean up (dedupe + sort)
   noteValues = Array.from(new Set(noteValues)).sort((a, b) => a - b);
   return noteValues;
 }
+
 
 
 function isBundleModeEnabled() {
