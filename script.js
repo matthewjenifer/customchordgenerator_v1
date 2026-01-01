@@ -553,47 +553,61 @@ document.addEventListener("keyup", function () {
 });
 
 
-    // Annotated export (private feature)
+//    // Annotated export (private feature)
+// const annotateExportBtn = document.getElementById("annotateExportBtn");
+// if (annotateExportBtn) {
+//   annotateExportBtn.addEventListener("click", function () {
+//     const setName = document.getElementById("setName").value.trim() || "Chord Set";
+//     const key = document.getElementById("keySelector").value;
 
-    // const annotateExportBtn = document.getElementById('annotateExportBtn');
-    // if (annotateExportBtn) {
-    //     annotateExportBtn.addEventListener('click', function () {
-    //         const setName = document.getElementById('setName').value.trim() || 'Chord Set';
-    //         const key = document.getElementById('keySelector').value;
-    //         // Pull from the chordContainer you initialized at the top
-    //         const chordInputs = chordContainer.querySelectorAll('input');
+//     // keySelector can be "_" until user picks a key (and detectChordOriginAuto will throw)
+//     if (!key || key === "_") {
+//       alert("Select a key before exporting annotated theory.");
+//       return;
+//     }
 
-    //         // Build chordNames just like in generateJSON
-    //         const chordNames = Array.from(chordInputs).map(input => input.value.trim()).filter(
-    //             name => name);
+//     const chordInputs = chordContainer.querySelectorAll("input");
+//     const chordNames = Array.from(chordInputs)
+//       .map((input) => input.value.trim())
+//       .filter(Boolean);
 
-    //         if (chordNames.length === 0) {
-    //             alert('No chords to annotate.');
-    //             return;
-    //         }
+//     if (chordNames.length === 0) {
+//       alert("No chords to annotate.");
+//       return;
+//     }
 
-    //         let output = `Chord Set: ${setName}\nKey: ${key} Major\n\n`;
-    //         output += "Pad\tChord\tAnalysis\n";
-    //         output += "----------------------------------------\n";
-    //         chordNames.forEach((chord, i) => {
-    //             let theory = detectChordOriginAuto(chord, key);
-    //             output += `${i + 1}\t${chord}\t${theory}\n`;
-    //         });
+//     let output = `Chord Set: ${setName}\nKey: ${key} Major\n\n`;
+//     output += "Pad\tChord\tAnalysis\n";
+//     output += "----------------------------------------\n";
 
-    //         // Download as text file
-    //         const blob = new Blob([output], {
-    //             type: 'text/plain'
-    //         });
-    //         const url = URL.createObjectURL(blob);
-    //         const a = document.createElement('a');
-    //         a.href = url;
-    //         a.download = `annotated_${setName.replace(/\s+/g, "_")}.txt`;
-    //         document.body.appendChild(a);
-    //         a.click();
-    //         document.body.removeChild(a);
-    //         URL.revokeObjectURL(url);
-    //     });
-    // }
+//     chordNames.forEach((chord, i) => {
+//       // Normalize things like F6/9 so analysis sees what parseChord sees
+//       const normalized = (typeof normalizeSlashExtensions === "function")
+//         ? normalizeSlashExtensions(chord)
+//         : chord;
+
+//       let theory = "Analysis unavailable";
+//       try {
+//         theory = detectChordOriginAuto(normalized, key);
+//       } catch (err) {
+//         theory = `Error: ${err?.message || err}`;
+//       }
+
+//       output += `${i + 1}\t${chord}\t${theory}\n`;
+//     });
+
+//     const blob = new Blob([output], { type: "text/plain" });
+//     const url = URL.createObjectURL(blob);
+//     const a = document.createElement("a");
+//     a.href = url;
+//     a.download = `annotated_${setName.replace(/\s+/g, "_")}.txt`;
+//     document.body.appendChild(a);
+//     a.click();
+//     document.body.removeChild(a);
+//     URL.revokeObjectURL(url);
+//   });
+// }
+
 
 function clearChordInputs() {
   const chordContainer = document.querySelector(".chord-input-container");
