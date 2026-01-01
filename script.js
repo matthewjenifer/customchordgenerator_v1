@@ -307,7 +307,7 @@ function updateChordLabel() {
   if (!label) return;
 
   label.textContent = isBundleModeEnabled()
-    ? "Chord Names (192 total)"
+    ? "Chord Names (192 max)"
     : "Chord Names (12 total)";
 }
 
