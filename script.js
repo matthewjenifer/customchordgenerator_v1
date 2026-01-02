@@ -13,6 +13,25 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function playChordName(chordName) {
+  startToneIfNeeded();
+
+  chordName = (chordName || "").trim();
+  if (!chordName) return false;
+
+  const noteValues = parseChord(chordName);
+  if (!noteValues) return false;
+
+  const notes = noteValues.map((val) => {
+    const midiNote = val + 60;
+    return Tone.Frequency(midiNote, "midi").toNote();
+  });
+
+  synth.triggerAttackRelease(notes, "2n", undefined, 0.25);
+  return true;
+}
+
+
 const downloadBundleBtn = document.getElementById("downloadBundleBtn");
 if (downloadBundleBtn) {
   downloadBundleBtn.addEventListener("click", downloadBundleZip);
@@ -474,6 +493,65 @@ const copyBtn = document.getElementById('copyBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const copyNotification = document.getElementById('copyNotification');
 
+// Auto-preview: when user focuses an empty field, preview the previous field (one-shot)
+let lastAutoPreviewSig = "";
+
+chordContainer.addEventListener("focusin", (e) => {
+  const target = e.target;
+  if (!target || target.tagName !== "INPUT") return;
+
+  // Only trigger when the field you clicked into is empty
+  if (target.value.trim() !== "") return;
+
+  const inputs = Array.from(chordContainer.querySelectorAll("input"));
+  const idx = inputs.indexOf(target);
+  if (idx <= 0) return;
+
+  const prev = inputs[idx - 1];
+  if (!prev) return;
+
+  const prevVal = prev.value.trim();
+  if (!prevVal) return;
+
+  // Prevent repeating the same autoplay over and over when bouncing focus
+  const sig = `${idx}:${prevVal}`;
+  if (sig === lastAutoPreviewSig) return;
+  lastAutoPreviewSig = sig;
+
+  if (autoPlayEnabled) playChordName(prevVal);
+
+});
+
+let autoPlayEnabled = false;
+
+const autoPlayToggleBtn = document.getElementById("autoPlayToggleBtn");
+
+function updateAutoPlayBtnUI() {
+  if (!autoPlayToggleBtn) return;
+
+  autoPlayToggleBtn.setAttribute("aria-pressed", String(autoPlayEnabled));
+  autoPlayToggleBtn.title = autoPlayEnabled ? "Auto-play (On)" : "Auto-play (Off)";
+
+  // Latched look
+  if (autoPlayEnabled) {
+    autoPlayToggleBtn.classList.remove("bg-gray-700", "text-gray-300");
+    autoPlayToggleBtn.classList.add("bg-purple-600", "text-white");
+  } else {
+    autoPlayToggleBtn.classList.remove("bg-purple-600", "text-white");
+    autoPlayToggleBtn.classList.add("bg-gray-700", "text-gray-300");
+  }
+}
+
+if (autoPlayToggleBtn) {
+  updateAutoPlayBtnUI();
+  autoPlayToggleBtn.addEventListener("click", () => {
+    autoPlayEnabled = !autoPlayEnabled;
+    updateAutoPlayBtnUI();
+  });
+}
+
+
+
 // Add initial chord inputs
 for (let i = 0; i < 12; i++) {
   addChordInput();
@@ -675,22 +753,11 @@ function clearChordInputs() {
   });
 
   const playBtn = inputDiv.querySelector(".play-chord-btn");
-  playBtn.addEventListener("click", function () {
-    startToneIfNeeded();
-
+    playBtn.addEventListener("click", function () {
     const chordName = inputDiv.querySelector("input").value.trim();
-    if (!chordName) return;
-
-    const noteValues = parseChord(chordName);
-    if (!noteValues) return;
-
-    const notes = noteValues.map((val) => {
-      const midiNote = val + 60;
-      return Tone.Frequency(midiNote, "midi").toNote();
-    });
-
-    synth.triggerAttackRelease(notes, "2n", undefined, 0.25);
+    playChordName(chordName);
   });
+
 }
 
 

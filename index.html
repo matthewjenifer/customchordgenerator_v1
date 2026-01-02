@@ -217,8 +217,28 @@
 
                 <div class="mb-6">
                     <br>
-                    <label id="chordNamesLabel" class="block text-sm font-medium text-gray-300"> Chord Names (12 total) </label>
-<br>
+
+     <div class="flex items-center justify-between">
+  <label id="chordNamesLabel" class="block text-sm font-medium text-gray-300">
+    Chord Names (12 total)
+  </label>
+
+  <!-- Maschine-style latch toggle -->
+  <button
+    id="autoPlayToggleBtn"
+    type="button"
+    class="px-2 py-1 rounded-md bg-gray-700 text-gray-300 hover:bg-gray-600 transition flex items-center gap-2"
+    title="Auto-Play (Off)"
+    aria-pressed="false"
+  >
+  <span class="text-xs italic">Auto</span>
+  <i class="fas fa-play text-xs"></i>
+  </button>
+</div>
+
+
+
+                    <br>
                     <div class="chord-input-container mb-4">
                         <!-- Chord inputs will be added here -->
                     </div>
