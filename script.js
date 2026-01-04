@@ -13,6 +13,45 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+const clearSuggestionConsoleBtn = document.getElementById("clearSuggestionConsoleBtn");
+if (clearSuggestionConsoleBtn) {
+  clearSuggestionConsoleBtn.addEventListener("click", clearSuggestionConsole);
+}
+
+
+function inferTonicScaleFromChordType(chordType) {
+  chordType = chordType.toLowerCase();
+
+  // Anything minor-ish gets harmonic minor
+  if (
+    chordType.startsWith("m") &&
+    !chordType.startsWith("maj")
+  ) {
+    return "harmonicMinor";
+  }
+
+  // Dominants and majors → major tonicization
+  return "major";
+}
+
+// --- In-app suggestion console (hidden until Ctrl+Shift+Alt+Z) ---
+function appendSuggestionConsoleLine(line) {
+  // Always keep regular dev console logs too
+  console.log(line);
+
+  const out = document.getElementById("suggestionConsoleOutput");
+  if (!out) return;
+
+  out.textContent += `${line}\n`;
+  out.scrollTop = out.scrollHeight;
+}
+
+function clearSuggestionConsole() {
+  const out = document.getElementById("suggestionConsoleOutput");
+  if (out) out.textContent = "";
+}
+
+
     function playChordName(chordName) {
   startToneIfNeeded();
 
@@ -22,6 +61,31 @@ document.addEventListener('DOMContentLoaded', function () {
   const noteValues = parseChord(chordName);
   console.log("[DEBUG] input:", chordName, "parsed noteValues:", noteValues);
   console.log("[DEBUG] roman:", document.getElementById("romanNumeralMode")?.checked && document.getElementById("keySelector")?.value !== "_" ? getRomanNumeralName(splitSlashBassSmart(chordName).main.match(/^([A-G][#b]?)/i)?.[1], splitSlashBassSmart(chordName).main.replace(/^([A-G][#b]?)/i, "").toLowerCase(), document.getElementById("keySelector").value) : "n/a");
+
+  // --- Secondary ii–V suggestion (preview-time only) ---
+const romanEnabled = document.getElementById("romanNumeralMode")?.checked;
+const key = document.getElementById("keySelector")?.value;
+
+if (romanEnabled && key && key !== "_") {
+  const split = splitSlashBassSmart(chordName);
+  const main = split.main;
+
+  const m = main.match(/^([A-G][#b]?)(.*)$/);
+  if (m) {
+    const targetRoot = m[1];
+    const chordType = (m[2] || "").toLowerCase();
+
+    const scaleType = inferTonicScaleFromChordType(chordType);
+    const passing = getSecondaryTwoFive(targetRoot, scaleType);
+
+    if (passing) {
+      appendSuggestionConsoleLine(
+  `ii–V → ${targetRoot}: ${passing.ii} → ${passing.V} → ${main}`
+);
+
+    }
+  }
+}
 
 
   if (!noteValues) return false;
@@ -642,6 +706,9 @@ document.addEventListener("keydown", function (e) {
   const bundleSection = document.getElementById("bundleSection");
   if (bundleSection) bundleSection.classList.remove("hidden");
 
+  const suggestionConsole = document.getElementById("suggestionConsole");
+  if (suggestionConsole) suggestionConsole.classList.remove("hidden");
+
   setFileNumberBundleMode(true);
   updateSlotIndicator();
   updateGenerateButtonLabel();
@@ -1085,6 +1152,8 @@ function clearChordInputs() {
     B: 11
   };
 
+
+
   const keyNum = rootMap[key];
   const chordNum = rootMap[chordRoot];
   if (keyNum === undefined || chordNum === undefined) return chordRoot;
@@ -1193,6 +1262,44 @@ function clearChordInputs() {
 
 
     // let theoryInfo = detectChordOriginAuto(chordName, key);
+
+    // --- Secondary ii–V suggestion helpers ---
+
+const SCALE_DEFS = {
+  major: {
+    intervals: [0, 2, 4, 5, 7, 9, 11],
+    chords: ["Maj7", "m7", "m7", "Maj7", "7", "m7", "m7b5"]
+  },
+  harmonicMinor: {
+    intervals: [0, 2, 3, 5, 7, 8, 11],
+    chords: ["mMaj7", "m7b5", "Maj7#5", "m7", "7", "Maj7", "dim7"]
+  }
+};
+
+const CHROMATIC_NOTES = ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+
+function buildScaleFromRoot(root, scaleType) {
+  const rootIdx = CHROMATIC_NOTES.indexOf(root);
+  if (rootIdx === -1) return null;
+
+  const def = SCALE_DEFS[scaleType];
+  return def.intervals.map(i =>
+    CHROMATIC_NOTES[(rootIdx + i) % 12]
+  );
+}
+
+function getSecondaryTwoFive(targetRoot, scaleType) {
+  const scale = buildScaleFromRoot(targetRoot, scaleType);
+  if (!scale) return null;
+
+  const def = SCALE_DEFS[scaleType];
+
+  // degree 2 and 5 (index 1 and 4)
+  const ii = scale[1] + def.chords[1];
+  const V  = scale[4] + def.chords[4];
+
+  return { ii, V };
+}
 
 
     // --- Chord Theory Detection Helpers ---
