@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const noteValues = parseChord(chordName);
   console.log("[DEBUG] input:", chordName, "parsed noteValues:", noteValues);
+  console.log("[DEBUG] roman:", document.getElementById("romanNumeralMode")?.checked && document.getElementById("keySelector")?.value !== "_" ? getRomanNumeralName(splitSlashBassSmart(chordName).main.match(/^([A-G][#b]?)/i)?.[1], splitSlashBassSmart(chordName).main.replace(/^([A-G][#b]?)/i, "").toLowerCase(), document.getElementById("keySelector").value) : "n/a");
+
 
   if (!noteValues) return false;
 
