@@ -20,6 +20,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!chordName) return false;
 
   const noteValues = parseChord(chordName);
+  console.log("[DEBUG] input:", chordName, "parsed noteValues:", noteValues);
+
   if (!noteValues) return false;
 
   const notes = noteValues.map((val) => {
@@ -1298,6 +1300,27 @@ function isSlashExtensionToken(token) {
   return /^(?:b|#)?(?:9|11|13)$/.test(token.trim());
 }
 
+function splitSlashBassSmart(chordName) {
+  const parts = (chordName || "").split("/").map(s => s.trim()).filter(Boolean);
+  if (parts.length <= 1) return { main: chordName.trim(), bass: null };
+
+  const last = parts[parts.length - 1];
+  // Only treat as a slash-bass chord if the LAST token is a note name.
+  if (!isNoteToken(last)) return { main: chordName.trim(), bass: null };
+
+  return {
+    main: parts.slice(0, -1).join("/"), // preserves any earlier slashes if they ever exist
+    bass: last
+  };
+}
+
+function stripSlashBassFromValues(noteValues, hasSlashBass) {
+  if (!hasSlashBass) return noteValues;
+  // noteValues are already sorted low → high
+  return noteValues.slice(1);
+}
+
+
 function normalizeSlashExtensions(chordName) {
   chordName = chordName.trim();
 
@@ -1338,11 +1361,10 @@ function normalizeSlashExtensions(chordName) {
   let bassNote = null;
 
   // 2) Slash chords (real bass)
-  if (chordName.includes("/")) {
-    [mainChord, bassNote] = chordName.split("/");
-    mainChord = mainChord.trim();
-    bassNote = bassNote.trim();
-  }
+    const split = splitSlashBassSmart(chordName);
+  mainChord = split.main;
+  bassNote = split.bass;
+
 
   // 3) Capture and remove omissions like (no3), (no5) before type parsing
   const omissions = [];
@@ -1582,7 +1604,7 @@ function buildJsonDataFromUI(options = {}) {
     const noteValues = parseChord(chordName);
     if (!noteValues) return { error: `Invalid chord: ${chordName}` };
 
-    let mainChord = chordName.includes("/") ? chordName.split("/")[0].trim() : chordName;
+    let mainChord = splitSlashBassSmart(chordName).main;
     const rootMatch = mainChord.match(/^([A-Ga-g][#b]?)/i);
     let root = rootMatch ? rootMatch[1] : chordName;
     root = root.charAt(0).toUpperCase() + root.slice(1).toLowerCase();
