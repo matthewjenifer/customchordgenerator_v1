@@ -733,8 +733,15 @@ document.addEventListener("keydown", function (e) {
   const suggestionConsole = document.getElementById("suggestionConsole");
   if (suggestionConsole) suggestionConsole.classList.remove("hidden");
 
-  setFileNumberBundleMode(true);
-  updateSlotIndicator();
+    setFileNumberBundleMode(true);
+
+  // If we're currently on a saved slot, jump forward immediately
+  if (bundleState.slots[bundleState.currentSlotIndex]?.status === "saved") {
+    goToNextAvailableSlot(); // includes updateSlotIndicator()
+  } else {
+    updateSlotIndicator();
+  }
+
   updateGenerateButtonLabel();
   updateChordLabel();
 
@@ -745,62 +752,6 @@ document.addEventListener("keydown", function (e) {
 document.addEventListener("keyup", function () {
   bundleShortcutTriggered = false;
 });
-
-
-//    // Annotated export (private feature)
-// const annotateExportBtn = document.getElementById("annotateExportBtn");
-// if (annotateExportBtn) {
-//   annotateExportBtn.addEventListener("click", function () {
-//     const setName = document.getElementById("setName").value.trim() || "Chord Set";
-//     const key = document.getElementById("keySelector").value;
-
-//     // keySelector can be "_" until user picks a key (and detectChordOriginAuto will throw)
-//     if (!key || key === "_") {
-//       alert("Select a key before exporting annotated theory.");
-//       return;
-//     }
-
-//     const chordInputs = chordContainer.querySelectorAll("input");
-//     const chordNames = Array.from(chordInputs)
-//       .map((input) => input.value.trim())
-//       .filter(Boolean);
-
-//     if (chordNames.length === 0) {
-//       alert("No chords to annotate.");
-//       return;
-//     }
-
-//     let output = `Chord Set: ${setName}\nKey: ${key} Major\n\n`;
-//     output += "Pad\tChord\tAnalysis\n";
-//     output += "----------------------------------------\n";
-
-//     chordNames.forEach((chord, i) => {
-//       // Normalize things like F6/9 so analysis sees what parseChord sees
-//       const normalized = (typeof normalizeSlashExtensions === "function")
-//         ? normalizeSlashExtensions(chord)
-//         : chord;
-
-//       let theory = "Analysis unavailable";
-//       try {
-//         theory = detectChordOriginAuto(normalized, key);
-//       } catch (err) {
-//         theory = `Error: ${err?.message || err}`;
-//       }
-
-//       output += `${i + 1}\t${chord}\t${theory}\n`;
-//     });
-
-//     const blob = new Blob([output], { type: "text/plain" });
-//     const url = URL.createObjectURL(blob);
-//     const a = document.createElement("a");
-//     a.href = url;
-//     a.download = `annotated_${setName.replace(/\s+/g, "_")}.txt`;
-//     document.body.appendChild(a);
-//     a.click();
-//     document.body.removeChild(a);
-//     URL.revokeObjectURL(url);
-//   });
-// }
 
 
 function clearChordInputs() {
@@ -1651,7 +1602,15 @@ function generateJSON() {
   // Bundle mode: split into 12s and save into consecutive slots
   const chunks = chunkArray(allChordNames, CHORDS_PER_SET);
 
-  const startSlot = bundleState.currentSlotIndex;
+  let startSlot = bundleState.currentSlotIndex;
+
+  // HARD RULE: never start a bundle write on a saved slot
+  if (bundleState.slots[startSlot]?.status === "saved") {
+    goToNextAvailableSlot();              // updates currentSlotIndex + UI
+    startSlot = bundleState.currentSlotIndex;
+  }
+
+
   const endSlot = startSlot + chunks.length - 1;
 
   if (endSlot >= BUNDLE_SLOT_COUNT) {
@@ -1692,9 +1651,9 @@ function generateJSON() {
     }
   }
 
-  // show the first generated set in output (or change to last if you prefer)
-  goToSlot(startSlot);
-  updateSlotIndicator();
+  // Land on the next empty slot after the last one we just filled
+  goToSlot(endSlot);
+  goToNextAvailableSlot();
 
   // optional: clear set name after success (your existing behavior does this per-save,
   // but we only want to do it once here)
