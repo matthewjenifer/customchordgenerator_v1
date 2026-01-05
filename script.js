@@ -253,18 +253,28 @@ function saveAndAdvance() {
   if (success) nextSlot();
 }
 
-function validateFullBundle() {
-  const missing = bundleState.slots.filter(slot => slot.status !== "saved");
+function validateBundleForZip(minFiles = 2) {
+  const savedSlots = bundleState.slots.filter(
+    (slot) => slot.status === "saved" && typeof slot.jsonString === "string" && slot.jsonString.trim()
+  );
 
-  if (missing.length > 0) {
+  if (savedSlots.length < minFiles) {
     return {
       valid: false,
-      missingSlots: missing.map(s => s.index + 1)
+      savedCount: savedSlots.length,
+      minFiles,
+      savedSlots: []
     };
   }
 
-  return { valid: true };
+  return {
+    valid: true,
+    savedCount: savedSlots.length,
+    minFiles,
+    savedSlots
+  };
 }
+
 
 // ---------- Bundle Persistence ----------
 const BUNDLE_STORAGE_KEY = "masch_bundle_state_v1";
@@ -384,10 +394,17 @@ function updateZipButtonState() {
   const btn = document.getElementById("downloadBundleBtn");
   if (!btn) return;
 
-  const check = validateFullBundle();
+  const check = validateBundleForZip(2);
+
   btn.disabled = !check.valid;
-  btn.title = check.valid ? "Download bundle zip" : "🔒";
+
+  if (check.valid) {
+    btn.title = `Download bundle zip (${check.savedCount} file${check.savedCount === 1 ? "" : "s"})`;
+  } else {
+    btn.title = "🔒"; // or: `Save at least ${check.minFiles} sets to enable`
+  }
 }
+
 
 function updateChordLabel() {
   const label = document.getElementById("chordNamesLabel");
@@ -1882,10 +1899,9 @@ function buildJsonDataFromUI(options = {}) {
     }
 
 async function downloadBundleZip() {
-  // strict 16/16 enforcement
-  const check = validateFullBundle();
+  const check = validateBundleForZip(2);
   if (!check.valid) {
-    alert(`Bundle incomplete. Missing slots: ${check.missingSlots.join(", ")}`);
+    alert(`Save at least ${check.minFiles} sets before exporting. Currently saved: ${check.savedCount}.`);
     return;
   }
 
@@ -1896,21 +1912,15 @@ async function downloadBundleZip() {
 
   const zip = new JSZip();
 
-  // optional: put files inside a folder in the zip
   const folderName = (bundleState.bundleName || "user_chord_sets")
     .trim()
     .replace(/[^\w\-]+/g, "_");
+
   const folder = zip.folder(folderName);
 
-  // add each slot as a file
-  for (const slot of bundleState.slots) {
-    // safety guard (should already be saved due to strict check)
-    if (slot.status !== "saved" || !slot.jsonString) continue;
-
-    // deterministic naming
-    const fileName =
-      `${bundleState.filePrefix}${String(slot.index + 1).padStart(2, "0")}.json`;
-
+  // Add ONLY saved slots (keep slot-index naming so Maschine order is consistent)
+  for (const slot of check.savedSlots) {
+    const fileName = `${bundleState.filePrefix}${String(slot.index + 1).padStart(2, "0")}.json`;
     folder.file(fileName, slot.jsonString);
   }
 
@@ -1928,6 +1938,7 @@ async function downloadBundleZip() {
 
   URL.revokeObjectURL(url);
 }
+
 
 
     // Function to download JSON as file
