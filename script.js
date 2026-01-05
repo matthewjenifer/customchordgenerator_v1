@@ -505,6 +505,26 @@ if (hint) {
   persistBundleState();
 }
 
+function moveInstallPathAfterBundlePanel() {
+  const install = document.getElementById("installPathInstructions");
+  const bundleSection = document.getElementById("bundleSection");
+  if (!install || !bundleSection) return;
+
+  // Put Installation Path immediately AFTER the entire bundle panel (controls + grid)
+  bundleSection.insertAdjacentElement("afterend", install);
+}
+
+function moveActionButtonsAboveInstallPath() {
+  const install = document.getElementById("installPathInstructions");
+  const buttons = document.getElementById("jsonActionButtons"); 
+  // ^ use the actual ID/class if yours differs
+
+  if (!install || !buttons) return;
+
+  install.insertAdjacentElement("beforebegin", buttons);
+}
+
+
 
 // Bundle UI wiring
 const bundlePrevBtn = document.getElementById("bundlePrevBtn");
@@ -705,6 +725,10 @@ document.addEventListener("keydown", function (e) {
 
   const bundleSection = document.getElementById("bundleSection");
   if (bundleSection) bundleSection.classList.remove("hidden");
+
+  moveInstallPathAfterBundlePanel();
+  moveActionButtonsAboveInstallPath();
+
 
   const suggestionConsole = document.getElementById("suggestionConsole");
   if (suggestionConsole) suggestionConsole.classList.remove("hidden");
