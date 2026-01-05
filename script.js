@@ -647,9 +647,11 @@ for (let i = 0; i < 12; i++) {
 
 updateSlotIndicator();
 updateChordLabel();
+updateAddChordButtonLabel();
+
 
     // Event listeners
-    addChordBtn.addEventListener('click', addChordInput);
+    addChordBtn.addEventListener("click", onAddChordClicked);
     generateBtn.addEventListener('click', generateJSON);
     copyBtn.addEventListener('click', copyToClipboard);
     downloadBtn.addEventListener('click', downloadJSON);
@@ -744,6 +746,8 @@ document.addEventListener("keydown", function (e) {
 
   updateGenerateButtonLabel();
   updateChordLabel();
+  updateAddChordButtonLabel();
+
 
   const jsonOutput = document.getElementById("jsonOutput");
   if (jsonOutput) jsonOutput.setAttribute("contenteditable", "true");
@@ -804,6 +808,42 @@ function clearChordInputs() {
     playChordName(chordName);
   });
 
+}
+
+const MAX_CHORD_INPUTS = 192; // 16 slots * 12 chords
+
+function updateAddChordButtonLabel() {
+  if (!addChordBtn) return;
+
+  if (isBundleModeEnabled()) {
+    addChordBtn.innerHTML = '<i class="fas fa-plus mr-2"></i>Add 1 Set (12 Chords)';
+  } else {
+    addChordBtn.innerHTML = '<i class="fas fa-plus mr-2"></i>Add Chord';
+  }
+}
+
+function addChordInputs(count) {
+  const current = chordContainer.querySelectorAll("input").length;
+
+  if (isBundleModeEnabled()) {
+    const remaining = MAX_CHORD_INPUTS - current;
+    const toAdd = Math.max(0, Math.min(count, remaining));
+
+    if (toAdd === 0) {
+      alert("You already have the maximum of 192 chord inputs (16 sets).");
+      return;
+    }
+
+    for (let i = 0; i < toAdd; i++) addChordInput();
+    return;
+  }
+
+  // non-bundle: your existing addChordInput() already enforces max 12
+  addChordInput();
+}
+
+function onAddChordClicked() {
+  addChordInputs(isBundleModeEnabled() ? 12 : 1);
 }
 
 
