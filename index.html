@@ -131,6 +131,45 @@
 </div>
 
             </div>
+<br>
+<!-- Bulk Paste (Bundle mode only) -->
+<div id="bulkPastePanel" class="hidden mb-4 p-4 bg-gray-900 border border-gray-700 rounded-xl">
+  <div class="text-sm font-medium text-purple-300 mb-2">
+    Paste Chord Progression (comma-separated)
+  </div>
+
+  <div class="text-xs text-gray-400 mb-2">
+    Example: Cmaj7, Am7, Dm7, G7
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <textarea
+      id="bulkPasteInput"
+      rows="3"
+      placeholder="Paste up to 192 chords here (comma-separated)..."
+      class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+    ></textarea>
+
+    <div class="flex justify-end gap-2">
+  <button
+    id="bulkPasteClearBtn"
+    type="button"
+    class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition"
+  >
+    Clear
+  </button>
+
+  <button
+    id="bulkPasteApplyBtn"
+    class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition"
+  >
+    Fill Inputs
+  </button>
+</div>
+
+  </div>
+</div>
+
             <div class="max-w-4xl mx-auto bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
@@ -217,6 +256,8 @@
 
                 <div class="mb-6">
                     <br>
+
+
 <div class="max-w-3xl ml-1">
   <div id="suggestionConsole"
        class="hidden mb-4 bg-gray-900 border border-gray-700 rounded-xl p-3">
@@ -322,7 +363,7 @@
                     
                 </div>
 
-                <!-- Bundle Controls -->
+
                  <!-- Bundle Section (Hidden until Shift+Z) -->
 <div id="bundleSection" class="hidden">
 
@@ -379,6 +420,7 @@
 
   <!-- Bundle Slot Grid -->
   <div id="bundleSlotGrid" class="grid grid-cols-4 gap-3 mb-4"></div>
+
 
 </div>
 

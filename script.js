@@ -574,6 +574,94 @@ if (bundleNameInput) {
 // Initialize chord inputs
 const chordContainer = document.querySelector('.chord-input-container');
 const addChordBtn = document.getElementById('addChordBtn');
+
+// Bulk paste (comma-separated) -> fills the first 12 chord inputs
+const bulkPasteInput = document.getElementById("bulkPasteInput");
+const bulkPasteApplyBtn = document.getElementById("bulkPasteApplyBtn");
+const bulkPasteClearBtn = document.getElementById("bulkPasteClearBtn");
+
+
+function parseCommaSeparatedChords(text) {
+  return String(text || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function fillFromFirstEmptyUpToMax(chords) {
+  if (!chordContainer) return;
+
+  const MAX = typeof MAX_CHORD_INPUTS === "number" ? MAX_CHORD_INPUTS : 192;
+
+  let inputs = Array.from(chordContainer.querySelectorAll("input"));
+
+  // Find first empty input
+  let startIndex = inputs.findIndex(inp => inp.value.trim() === "");
+  if (startIndex === -1) startIndex = inputs.length;
+
+  if (startIndex >= MAX) {
+    alert("All chord fields are filled (192 max).");
+    return;
+  }
+
+  const availableSlots = MAX - startIndex;
+  const toFill = chords.slice(0, availableSlots);
+
+  // Ensure enough input boxes exist
+  const requiredTotal = startIndex + toFill.length;
+  if (inputs.length < requiredTotal) {
+    const missing = requiredTotal - inputs.length;
+    addChordInputs(missing);
+    inputs = Array.from(chordContainer.querySelectorAll("input"));
+  }
+
+  // Fill without overwriting existing values
+  for (let i = 0; i < toFill.length; i++) {
+    inputs[startIndex + i].value = toFill[i];
+  }
+
+  inputs[startIndex]?.focus();
+
+  if (chords.length > toFill.length) {
+    alert(`Only ${toFill.length} chords were inserted (192 max).`);
+  }
+}
+
+// APPLY pasted chords
+if (bulkPasteApplyBtn) {
+  bulkPasteApplyBtn.addEventListener("click", () => {
+    const chords = parseCommaSeparatedChords(bulkPasteInput?.value);
+    if (!chords.length) {
+      alert("Paste comma-separated chords first.");
+      return;
+    }
+    fillFromFirstEmptyUpToMax(chords);
+  });
+}
+
+if (bulkPasteClearBtn) {
+  bulkPasteClearBtn.addEventListener("click", () => {
+    // Clear ONLY the paste textarea
+    if (bulkPasteInput) bulkPasteInput.value = "";
+    bulkPasteInput?.focus();
+  });
+}
+
+
+
+if (bulkPasteApplyBtn) {
+  bulkPasteApplyBtn.addEventListener("click", () => {
+    const chords = parseCommaSeparatedChords(bulkPasteInput?.value);
+    if (!chords.length) {
+      alert("Paste chords separated by commas first.");
+      return;
+    }
+    fillFromFirstEmptyUpToMax(chords);
+
+  });
+}
+
+
 const generateBtn = document.getElementById('generateBtn');
 const outputSection = document.getElementById('outputSection');
 const jsonOutput = document.getElementById('jsonOutput');
@@ -727,6 +815,10 @@ document.addEventListener("keydown", function (e) {
 
   const bundleSection = document.getElementById("bundleSection");
   if (bundleSection) bundleSection.classList.remove("hidden");
+
+    const bulkPastePanel = document.getElementById("bulkPastePanel");
+  if (bulkPastePanel) bulkPastePanel.classList.remove("hidden");
+
 
   moveInstallPathAfterBundlePanel();
   moveActionButtonsAboveInstallPath();
