@@ -34,6 +34,150 @@ function inferTonicScaleFromChordType(chordType) {
   return "major";
 }
 
+
+// ------------------------------------------------------------
+// Rules-based passing-chord suggestions (console helper)
+// Inspired by: Prince (modal interchange + delayed resolution),
+// D’Angelo (waterfalls, 3-chord subs, skip-the-V), and the
+// “Chopin” voice-leading game (move one note at a time).
+// ------------------------------------------------------------
+
+function semitoneDistance(a, b) {
+  const d = Math.abs((a - b) % 12);
+  return Math.min(d, 12 - d);
+}
+
+function rootToSemitone(root) {
+  if (!root) return null;
+  const r = String(root).trim();
+  return (typeof rootNoteMap === "object" && rootNoteMap && r in rootNoteMap) ? rootNoteMap[r] : null;
+}
+
+function semitoneToNoteName(semi, keyRootForSpelling) {
+  if (typeof getNoteNames === "function") {
+    const names = getNoteNames(keyRootForSpelling || "C");
+    return names[((semi % 12) + 12) % 12];
+  }
+  // Fallback (sharps)
+  const SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  return SHARP[((semi % 12) + 12) % 12];
+}
+
+function transposeRoot(root, semis, keyRootForSpelling) {
+  const s = rootToSemitone(root);
+  if (s === null) return null;
+  return semitoneToNoteName((s + semis) % 12, keyRootForSpelling);
+}
+
+function chordPitchClassSet(chordName) {
+  const vals = parseChord(chordName);
+  if (!vals) return null;
+  const set = new Set();
+  for (const v of vals) set.add((((v + 60) % 12) + 12) % 12);
+  return set;
+}
+
+function overlapCount(setA, setB) {
+  if (!setA || !setB) return 0;
+  let n = 0;
+  for (const x of setA) if (setB.has(x)) n++;
+  return n;
+}
+
+function makeDelayCadenceInMajor(targetRoot, keyForSpelling) {
+  if (typeof getScaleRoots !== "function") return null;
+  const scale = getScaleRoots(targetRoot, "ionian");
+  if (!Array.isArray(scale) || scale.length < 7) return null;
+
+  const I  = `${targetRoot}maj7`;
+  const II = `${scale[1]}m7`;
+  const iii = `${scale[2]}m7`;
+  const IV = `${scale[3]}maj7`;
+  const iv = `${scale[3]}m7`;
+  const V  = `${scale[4]}7`;
+
+  // Prince-style “delay the obvious landing” chain (kept compact)
+  return `${IV} → ${iv} → ${iii} → ${II} → ${V} → ${I}`;
+}
+
+function buildPassingSuggestionLines({ main, targetRoot, chordType, key }) {
+  const scaleType = inferTonicScaleFromChordType(chordType);
+  const passing = getSecondaryTwoFive(targetRoot, scaleType);
+  if (!passing) return null;
+
+  // RN label for what you just previewed (so user sees "why")
+  let rn = "";
+  try {
+    const rnName = (typeof getRomanNumeralName === "function")
+      ? getRomanNumeralName(targetRoot, chordType, key)
+      : "";
+    rn = rnName ? ` (${rnName})` : "";
+  } catch (_) {
+    rn = "";
+  }
+
+  const lines = [];
+
+  // 0) context line
+  lines.push(`🎛 Key ${key} | Target ${main}${rn}`);
+
+  // 1) baseline: ii–V into the chord you played
+  lines.push(`1) ii–V → ${targetRoot}: ${passing.ii} → ${passing.V} → ${main}`);
+
+  // 2) D’Angelo-style: skip the V for smoother motion (ii → I)
+  lines.push(`2) Skip V (smooth): ${passing.ii} → ${main}`);
+
+  // 3) D’Angelo “3-chord sub”: land on a third-related substitute instead of the obvious I
+  //    - If target feels major-ish: land on iii (a minor 7 a major 3rd above)
+  //    - If target feels minor-ish: land on relative major (a maj7 a minor 3rd above)
+  const thirdSub =
+    scaleType === "major"
+      ? `${transposeRoot(targetRoot, +4, key)}m7`
+      : `${transposeRoot(targetRoot, +3, key)}maj7`;
+  if (thirdSub && thirdSub !== main) {
+    lines.push(`3) 3rd-sub landing: ${passing.ii} → ${passing.V} → ${thirdSub}`);
+  }
+
+  // 4) Prince-style borrowed color from the *song key* (modal interchange)
+  //    - bVImaj7 and ivm7 are reliable “lift / haunt” colors in major keys.
+  if (key && key !== "_") {
+    const keySemi = rootToSemitone(key);
+    if (keySemi !== null) {
+      const bVI = semitoneToNoteName((keySemi + 8) % 12, key) + "maj7"; // bVI
+      const IV  = semitoneToNoteName((keySemi + 5) % 12, key);          // IV
+      const iv  = IV + "m7";                                            // iv (borrowed)
+      lines.push(`4) Borrowed bVI: ${passing.ii} → ${passing.V} → ${bVI}`);
+      lines.push(`5) Borrowed iv: ${passing.ii} → ${passing.V} → ${iv}`);
+    }
+  }
+
+  // 5) Prince-style “avoid the obvious ending”: delay cadence in the tonicized key (major only)
+  if (scaleType === "major") {
+    const delay = makeDelayCadenceInMajor(targetRoot, key);
+    if (delay) {
+      lines.push(`6) Delay the landing: ${passing.ii} → ${passing.V} → ${delay}`);
+    }
+  }
+
+  // Optional: score-readout (Chopin-ish voice-leading proxy: shared pitch-classes)
+  const mainSet = chordPitchClassSet(main);
+  const resTargets = [
+    { label: "I", chord: main },
+    { label: "3rdSub", chord: thirdSub },
+  ].filter(x => x.chord);
+
+  const scores = [];
+  for (const t of resTargets) {
+    const setB = chordPitchClassSet(t.chord);
+    const ov = overlapCount(mainSet, setB);
+    scores.push(`${t.label}:${ov}`);
+  }
+  if (scores.length) lines.push(`↳ voice-lead hint (shared tones vs target): ${scores.join(" | ")}`);
+
+  return lines;
+}
+
+
 // --- In-app suggestion console (hidden until Ctrl+Shift+Alt+Z) ---
 function appendSuggestionConsoleLine(line) {
   // Always keep regular dev console logs too
@@ -62,7 +206,7 @@ function clearSuggestionConsole() {
   console.log("[DEBUG] input:", chordName, "parsed noteValues:", noteValues);
   console.log("[DEBUG] roman:", document.getElementById("romanNumeralMode")?.checked && document.getElementById("keySelector")?.value !== "_" ? getRomanNumeralName(splitSlashBassSmart(chordName).main.match(/^([A-G][#b]?)/i)?.[1], splitSlashBassSmart(chordName).main.replace(/^([A-G][#b]?)/i, "").toLowerCase(), document.getElementById("keySelector").value) : "n/a");
 
-  // --- Secondary ii–V suggestion (preview-time only) ---
+// --- Passing-chord suggestions (rules-based, preview-time only) ---
 const romanEnabled = document.getElementById("romanNumeralMode")?.checked;
 const key = document.getElementById("keySelector")?.value;
 
@@ -75,18 +219,13 @@ if (romanEnabled && key && key !== "_") {
     const targetRoot = m[1];
     const chordType = (m[2] || "").toLowerCase();
 
-    const scaleType = inferTonicScaleFromChordType(chordType);
-    const passing = getSecondaryTwoFive(targetRoot, scaleType);
-
-    if (passing) {
-      appendSuggestionConsoleLine(
-  `ii–V → ${targetRoot}: ${passing.ii} → ${passing.V} → ${main}`
-);
-
+    const lines = buildPassingSuggestionLines({ main, targetRoot, chordType, key });
+    if (lines && lines.length) {
+      for (const line of lines) appendSuggestionConsoleLine(line);
+      appendSuggestionConsoleLine(""); // blank spacer line
     }
   }
 }
-
 
   if (!noteValues) return false;
 
