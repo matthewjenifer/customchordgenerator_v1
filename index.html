@@ -11,10 +11,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .chord-input-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 0.75rem;
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 0.75rem;
+          align-items: stretch;
         }
+
+
 
         .json-output {
             font-family: 'Courier New', Courier, monospace;
@@ -30,6 +33,20 @@
         .copy-notification.show {
             opacity: 1;
         }
+
+        .chord-input-container > div {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          min-width: 0;
+        }
+
+        .chord-input-container input {
+          flex: 1;
+          min-width: 0;
+        }
+
+
     </style>
 
     <!-- Open Graph meta tags for social preview -->
@@ -276,7 +293,7 @@
          class="text-xs text-gray-200 whitespace-pre-wrap overflow-auto max-h-32 font-mono"></pre>
 
     <div class="text-[11px] text-gray-500 mt-2 italic">
-      Preview a chord while Roman Numeral Mode is enabled to log ii–V suggestions.
+      Preview a chord while conversion is enabled to log ii–V suggestions.
     </div>
   </div>
 </div>
