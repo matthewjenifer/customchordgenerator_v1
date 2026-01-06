@@ -805,22 +805,89 @@ if (bulkPasteClearBtn) {
 
 
 
-if (bulkPasteApplyBtn) {
-  bulkPasteApplyBtn.addEventListener("click", () => {
-    const chords = parseCommaSeparatedChords(bulkPasteInput?.value);
-    if (!chords.length) {
-      alert("Paste chords separated by commas first.");
-      return;
-    }
-    fillFromFirstEmptyUpToMax(chords);
-
-  });
-}
-
-
 const generateBtn = document.getElementById('generateBtn');
 const outputSection = document.getElementById('outputSection');
 const jsonOutput = document.getElementById('jsonOutput');
+
+// ---------- Editable JSON panel: save edits back into current slot ----------
+(function bindJsonEditorPersistence() {
+  if (!jsonOutput) return;
+
+  // Prevent double-binding if script is reloaded / patched
+  if (jsonOutput.dataset.boundSave === "1") return;
+  jsonOutput.dataset.boundSave = "1";
+
+  let debounceId = null;
+  let lastValidSavedText = "";
+
+  function commitEditedJsonToCurrentSlot({ notifyOnError = false } = {}) {
+    if (!isBundleModeEnabled()) return;
+
+    const slot = bundleState.slots[bundleState.currentSlotIndex];
+    if (!slot) return;
+
+    // Only allow edits to affect actual saved content
+    if (slot.status !== "saved") return;
+
+    const text = (jsonOutput.textContent || "").trim();
+
+    // Ignore the placeholder comments / empty
+    if (!text || text.startsWith("//")) return;
+
+    // No-op if nothing changed
+    if (text === slot.jsonString || text === lastValidSavedText) return;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (err) {
+      if (notifyOnError) {
+        alert("Edited JSON is not valid yet. Fix the JSON formatting before exporting.\n\n" + err.message);
+      }
+      return;
+    }
+
+    // Basic sanity check: looks like a chord-set file
+    if (!parsed || parsed.typeId !== "native-instruments-chord-set" || !Array.isArray(parsed.chords)) {
+      if (notifyOnError) {
+        alert("Edited JSON is valid, but it doesn't look like a Maschine chord-set JSON (missing typeId/chords).");
+      }
+      return;
+    }
+
+    // ✅ Commit edits to slot (THIS is what ZIP export reads)
+    slot.data = parsed;
+    slot.jsonString = text;
+    slot.uuid = parsed.uuid || slot.uuid || "";
+    slot.chordCount = parsed.chords.length;
+    slot.savedAt = Date.now();
+    slot.error = "";
+    slot.status = "saved";
+
+    bundleState.updatedAt = Date.now();
+    persistBundleState();
+
+    lastValidSavedText = text;
+
+    // Refresh UI bits that depend on slot state
+    updateSlotIndicator();
+    renderSlotGrid?.();
+    updateZipButtonState?.();
+  }
+
+  // Save while typing (debounced), but only when valid JSON
+  jsonOutput.addEventListener("input", () => {
+    clearTimeout(debounceId);
+    debounceId = setTimeout(() => commitEditedJsonToCurrentSlot({ notifyOnError: false }), 400);
+  });
+
+  // On blur, if it's invalid JSON, tell them (so they don't export thinking it's saved)
+  jsonOutput.addEventListener("blur", () => {
+    commitEditedJsonToCurrentSlot({ notifyOnError: true });
+  });
+})();
+
+
 const copyBtn = document.getElementById('copyBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const copyNotification = document.getElementById('copyNotification');
